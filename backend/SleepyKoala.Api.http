@@ -1,0 +1,6 @@
+@SleepyKoala.Api_HostAddress = http://localhost:5125
+
+GET {{SleepyKoala.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,29 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace SleepyKoala.Api.DTOs
+{
+    public class CheckInRequest
+    {
+        [Required]
+        public required string Timezone { get; set; }
+    }
+
+    public class CheckInResponse
+    {
+        public Guid CheckInId { get; set; }
+        public required string Status { get; set; }
+        public required string LocalCheckInDate { get; set; }
+        public int CurrentStreak { get; set; }
+        public required string KoalaMood { get; set; }
+        public List<string> UnlockedBadges { get; set; } = new List<string>();
+    }
+
+    public class CheckInHistoryDto
+    {
+        public Guid Id { get; set; }
+        public required string LocalCheckInDate { get; set; }
+        public required string Status { get; set; }
+    }
+}
