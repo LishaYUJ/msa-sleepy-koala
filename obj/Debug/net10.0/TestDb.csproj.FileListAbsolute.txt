@@ -1,5 +1,0 @@
-/Users/lishaaa/Downloads/msa-sleepy koala/obj/Debug/net10.0/TestDb.csproj.AssemblyReference.cache
-/Users/lishaaa/Downloads/msa-sleepy koala/obj/Debug/net10.0/TestDb.GeneratedMSBuildEditorConfig.editorconfig
-/Users/lishaaa/Downloads/msa-sleepy koala/obj/Debug/net10.0/TestDb.AssemblyInfoInputs.cache
-/Users/lishaaa/Downloads/msa-sleepy koala/obj/Debug/net10.0/TestDb.AssemblyInfo.cs
-/Users/lishaaa/Downloads/msa-sleepy koala/obj/Debug/net10.0/TestDb.csproj.CoreCompileInputs.cache
