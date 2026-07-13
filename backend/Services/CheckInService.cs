@@ -30,54 +30,122 @@ namespace SleepyKoala.Api.Services
 
             if (user == null || user.Settings == null) return null;
 
-            var userTz = TimeZoneInfo.FindSystemTimeZoneById(user.Settings.Timezone);
-            var nowUtc = DateTime.UtcNow;
-            var localTime = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, userTz);
-            var localDateStr = localTime.ToString("yyyy-MM-dd");
+            // Validate LocalDate format (yyyy-MM-dd)
+            if (!DateTime.TryParseExact(request.LocalDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+            {
+                throw new ArgumentException("LocalDate must be in 'yyyy-MM-dd' format.");
+            }
+
+            // Validate LocalTime format (HH:mm or HH:mm:ss)
+            if (!TimeSpan.TryParse(request.LocalTime, out var localTimeSpan) ||
+                localTimeSpan < TimeSpan.Zero || localTimeSpan >= TimeSpan.FromDays(1))
+            {
+                throw new ArgumentException("LocalTime must be a valid time of day in 'HH:mm' or 'HH:mm:ss' format.");
+            }
 
             // Prevent duplicate check-in
             var alreadyCheckedIn = await _context.CheckIns
-                .AnyAsync(c => c.UserId == userId && c.LocalCheckInDate == localDateStr);
+                .AnyAsync(c => c.UserId == userId && c.LocalCheckInDate == request.LocalDate);
             if (alreadyCheckedIn)
             {
                 throw new InvalidOperationException("DuplicateCheckIn");
             }
 
             // Determine if onTime or late
-            var cutoffParts = user.Settings.CutoffTime.Split(':');
-            var cutoffHour = int.Parse(cutoffParts[0]);
-            var cutoffMin = int.Parse(cutoffParts[1]);
-
-            var cutoffTimeLocal = new DateTime(localTime.Year, localTime.Month, localTime.Day, cutoffHour, cutoffMin, 0);
-            
-            // Allow checking in early (e.g. up to 12 hours before)
-            // But we simply check if localTime is <= cutoff time
-            string status = localTime <= cutoffTimeLocal ? "onTime" : "late";
-
-            if (status == "onTime")
+            if (!TimeSpan.TryParse(user.Settings.CutoffTime, out var cutoffTimeSpan))
             {
-                user.CurrentStreak++;
-                if (user.CurrentStreak > user.LongestStreak)
-                {
-                    user.LongestStreak = user.CurrentStreak;
-                }
+                cutoffTimeSpan = new TimeSpan(22, 0, 0); // Fallback to 22:00
+            }
+
+            // Compare local check-in time against bedtime cutoff
+            string status = localTimeSpan <= cutoffTimeSpan ? "onTime" : "late";
+
+            // Determine streak using submitted local date
+            var lastCheckIn = await _context.CheckIns
+                .Where(c => c.UserId == userId)
+                .OrderByDescending(c => c.LocalCheckInDate)
+                .FirstOrDefaultAsync();
+
+            int calculatedStreak = user.CurrentStreak;
+
+            if (lastCheckIn == null)
+            {
+                // First check in
+                calculatedStreak = (status == "onTime") ? 1 : 0;
             }
             else
             {
-                user.CurrentStreak = 0;
+                if (DateOnly.TryParse(request.LocalDate, out var currentLocalDate) &&
+                    DateOnly.TryParse(lastCheckIn.LocalCheckInDate, out var lastLocalDate))
+                {
+                    int dayDifference = currentLocalDate.DayNumber - lastLocalDate.DayNumber;
+                    if (dayDifference == 1)
+                    {
+                        // Consecutive day check-in
+                        if (status == "onTime")
+                        {
+                            calculatedStreak++;
+                        }
+                        else
+                        {
+                            calculatedStreak = 0;
+                        }
+                    }
+                    else if (dayDifference > 1)
+                    {
+                        // Missed check-in
+                        if (status == "onTime")
+                        {
+                            calculatedStreak = 1;
+                        }
+                        else
+                        {
+                            calculatedStreak = 0;
+                        }
+                    }
+                    else
+                    {
+                        // dayDifference <= 0 (same day check-in was already caught by duplicate check, this is fallback)
+                        if (status == "onTime")
+                        {
+                            calculatedStreak++;
+                        }
+                        else
+                        {
+                            calculatedStreak = 0;
+                        }
+                    }
+                }
+                else
+                {
+                    if (status == "onTime")
+                    {
+                        calculatedStreak++;
+                    }
+                    else
+                    {
+                        calculatedStreak = 0;
+                    }
+                }
+            }
+
+            user.CurrentStreak = calculatedStreak;
+            if (user.CurrentStreak > user.LongestStreak)
+            {
+                user.LongestStreak = user.CurrentStreak;
             }
 
             var checkIn = new CheckIn
             {
                 UserId = userId,
-                LocalCheckInDate = localDateStr,
+                LocalCheckInDate = request.LocalDate,
                 Status = status,
-                CreatedAtUtc = nowUtc
+                CreatedAtUtc = DateTime.UtcNow
             };
 
             _context.CheckIns.Add(checkIn);
 
-            var unlockedBadges = await CheckBadgesAsync(user, nowUtc);
+            var unlockedBadges = await CheckBadgesAsync(user, DateTime.UtcNow);
             var mood = CalculateKoalaMood(user, status);
 
             await _context.SaveChangesAsync();
@@ -86,7 +154,7 @@ namespace SleepyKoala.Api.Services
             {
                 CheckInId = checkIn.Id,
                 Status = status,
-                LocalCheckInDate = localDateStr,
+                LocalCheckInDate = request.LocalDate,
                 CurrentStreak = user.CurrentStreak,
                 KoalaMood = mood,
                 UnlockedBadges = unlockedBadges

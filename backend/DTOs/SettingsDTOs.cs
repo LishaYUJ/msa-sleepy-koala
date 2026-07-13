@@ -11,9 +11,6 @@ namespace SleepyKoala.Api.DTOs
         public required string CutoffTime { get; set; }
         
         [Required]
-        public required string Timezone { get; set; }
-        
-        [Required]
         public required string ThemePreference { get; set; }
     }
 }

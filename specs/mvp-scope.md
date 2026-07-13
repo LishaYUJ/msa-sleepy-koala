@@ -30,7 +30,9 @@ The MVP should prioritise a working application over excessive visual polish or 
 
 - User clicks **“I’m going to sleep”**
 - Backend records check-in timestamp in UTC
-- Backend determines whether check-in is on time or late based on the user’s timezone and cutoff time
+- Frontend sends the device's local date and local time to the backend
+- Backend determines whether check-in is on time or late by comparing the submitted local time against the user's configured bedtime
+- Bedtime is limited to evening times (20:00–23:59) for the MVP to avoid cross-midnight ambiguity
 - Prevent duplicate check-ins for the same local date
 
 ### Streak System

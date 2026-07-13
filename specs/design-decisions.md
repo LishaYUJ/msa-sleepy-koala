@@ -157,3 +157,27 @@ The project needs a clear design direction, but the main assessment risk is fail
 ### Outcome
 
 Figma will guide layout and user flow, while implementation remains the priority.
+
+---
+
+## Decision 10: Avoid Server-side Timezone Detection and Conversion for Bedtime Check-in
+
+### Decision
+
+For check-in evaluation, the MVP does not use server-side timezone detection or timezone conversion of server time. Instead, the frontend sends the device's local date and local time of the user's check-in to the backend. The backend uses the submitted local time directly to compare against the user's configured bedtime and decide if it is on time or late. The backend uses the submitted local date to calculate streaks and enforce once-daily check-in rules.
+
+Additionally, to avoid midnight-crossing complexity in the MVP, the bedtime settings are restricted to evening times (20:00–23:59).
+
+### Reason
+
+Relying on server-side conversion of UTC time to user local time requires robustly managing timezones, offsets, and edge cases, which is highly error-prone and complex. By directly submitting the local date and local time from the client device:
+1. The backend remains simple, clean, and decoupled from client timezone shifts.
+2. The user's local date determines the uniqueness of their check-in, avoiding duplicate check-ins on the same day.
+3. Bedtime restriction to 20:00–23:59 simplifies evaluation since a check-in at (e.g.) 22:15 is compared directly with bedtime (e.g. 22:00) without cross-midnight logic.
+
+Post-MVP, a specific check-in window (e.g., within 3 hours before/after bedtime) can be implemented to handle cases like a late check-in at 05:00 being misclassified.
+
+### Outcome
+
+A simpler and more reliable codebase that relies on client-provided local context for check-in evaluation while maintaining correct streak calculations.
+

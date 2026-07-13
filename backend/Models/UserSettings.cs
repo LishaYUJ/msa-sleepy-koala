@@ -12,8 +12,7 @@ namespace SleepyKoala.Api.Models
         [ForeignKey("UserId")]
         public User? User { get; set; }
 
-        public string CutoffTime { get; set; } = "00:00"; // default midnight
-        public string Timezone { get; set; } = "Pacific/Auckland";
+        public string CutoffTime { get; set; } = "22:00"; // default 10 PM
         public string ThemePreference { get; set; } = "system"; // light, dark, system
     }
 }

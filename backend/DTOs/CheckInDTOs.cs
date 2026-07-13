@@ -7,7 +7,10 @@ namespace SleepyKoala.Api.DTOs
     public class CheckInRequest
     {
         [Required]
-        public required string Timezone { get; set; }
+        public required string LocalDate { get; set; }
+
+        [Required]
+        public required string LocalTime { get; set; }
     }
 
     public class CheckInResponse

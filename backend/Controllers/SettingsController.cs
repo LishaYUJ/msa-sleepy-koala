@@ -36,7 +36,6 @@ namespace SleepyKoala.Api.Controllers
             {
                 Nickname = user.Nickname,
                 CutoffTime = user.Settings.CutoffTime,
-                Timezone = user.Settings.Timezone,
                 ThemePreference = user.Settings.ThemePreference
             });
         }
@@ -48,15 +47,15 @@ namespace SleepyKoala.Api.Controllers
             if (userIdStr == null) return Unauthorized();
             var userId = Guid.Parse(userIdStr);
 
-            // Validate timezone before hitting the database
-            try
+            // Validate bedtime cutoff time is between 20:00 and 23:59
+            if (!TimeSpan.TryParse(dto.CutoffTime, out var cutoffSpan) ||
+                cutoffSpan < new TimeSpan(20, 0, 0) ||
+                cutoffSpan > new TimeSpan(23, 59, 59))
             {
-                TimeZoneInfo.FindSystemTimeZoneById(dto.Timezone);
+                return BadRequest(new { error = "InvalidCutoffTime", message = "Bedtime (CutoffTime) must be between 20:00 and 23:59 to avoid cross-midnight ambiguity for MVP." });
             }
-            catch (TimeZoneNotFoundException)
-            {
-                return BadRequest(new { error = "InvalidTimezone", message = $"'{dto.Timezone}' is not a recognised timezone. Use GET /api/timezones for the full list." });
-            }
+
+
 
             var user = await _context.Users
                 .Include(u => u.Settings)
@@ -66,7 +65,6 @@ namespace SleepyKoala.Api.Controllers
 
             user.Nickname = dto.Nickname;
             user.Settings.CutoffTime = dto.CutoffTime;
-            user.Settings.Timezone = dto.Timezone;
             user.Settings.ThemePreference = dto.ThemePreference;
 
             await _context.SaveChangesAsync();

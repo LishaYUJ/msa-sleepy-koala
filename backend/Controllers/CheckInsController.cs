@@ -38,6 +38,10 @@ namespace SleepyKoala.Api.Controllers
             {
                 return BadRequest(new { error = "DuplicateCheckIn", message = "You have already checked in today." });
             }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = "InvalidArgument", message = ex.Message });
+            }
         }
 
         [HttpGet("me")]

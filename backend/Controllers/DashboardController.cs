@@ -23,7 +23,7 @@ namespace SleepyKoala.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetSummary()
+        public async Task<IActionResult> GetSummary([FromQuery] string? localDate)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userIdStr == null) return Unauthorized();
@@ -37,10 +37,16 @@ namespace SleepyKoala.Api.Controllers
 
             if (user == null || user.Settings == null) return NotFound();
 
-            var userTz = TimeZoneInfo.FindSystemTimeZoneById(user.Settings.Timezone);
-            var nowUtc = DateTime.UtcNow;
-            var localTime = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, userTz);
-            var localDateStr = localTime.ToString("yyyy-MM-dd");
+            string localDateStr;
+            if (!string.IsNullOrEmpty(localDate) && DateTime.TryParseExact(localDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+            {
+                localDateStr = localDate;
+            }
+            else
+            {
+                // Fallback: use UTC date when no localDate is provided
+                localDateStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            }
 
             var todayCheckIn = await _context.CheckIns
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.LocalCheckInDate == localDateStr);
@@ -50,17 +56,31 @@ namespace SleepyKoala.Api.Controllers
                 .OrderByDescending(c => c.LocalCheckInDate)
                 .FirstOrDefaultAsync();
 
+            int displayStreak = user.CurrentStreak;
+            if (lastCheckIn != null &&
+                DateOnly.TryParse(localDateStr, out var currentD) &&
+                DateOnly.TryParse(lastCheckIn.LocalCheckInDate, out var lastD))
+            {
+                if (currentD.DayNumber - lastD.DayNumber > 1)
+                {
+                    displayStreak = 0;
+                }
+            }
+            else if (lastCheckIn == null)
+            {
+                displayStreak = 0;
+            }
+
             var mood = _checkInService.CalculateKoalaMood(user, lastCheckIn?.Status ?? "onTime");
 
             var summary = new DashboardSummaryDto
             {
                 TodayCheckedIn = todayCheckIn != null,
                 TodayStatus = todayCheckIn?.Status,
-                CurrentStreak = user.CurrentStreak,
+                CurrentStreak = displayStreak,
                 LongestStreak = user.LongestStreak,
                 KoalaMood = mood,
                 CutoffTime = user.Settings.CutoffTime,
-                Timezone = user.Settings.Timezone,
                 Badges = user.UserBadges.Select(ub => new BadgeDto
                 {
                     Name = ub.Badge!.Name,
