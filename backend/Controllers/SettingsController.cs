@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SleepyKoala.Api.Data;
 using SleepyKoala.Api.DTOs;
-using System.Security.Claims;
+using SleepyKoala.Api.Extensions;
 
 namespace SleepyKoala.Api.Controllers
 {
@@ -22,13 +22,12 @@ namespace SleepyKoala.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSettings()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdStr == null) return Unauthorized();
-            var userId = Guid.Parse(userIdStr);
+            var userId = User.GetUserId();
+            if (userId == null) return Unauthorized();
 
             var user = await _context.Users
                 .Include(u => u.Settings)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+                .FirstOrDefaultAsync(u => u.Id == userId.Value);
 
             if (user == null || user.Settings == null) return NotFound();
 
@@ -43,9 +42,8 @@ namespace SleepyKoala.Api.Controllers
         [HttpPut]
         public async Task<IActionResult> UpdateSettings(SettingsDto dto)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdStr == null) return Unauthorized();
-            var userId = Guid.Parse(userIdStr);
+            var userId = User.GetUserId();
+            if (userId == null) return Unauthorized();
 
             // Validate bedtime cutoff time is between 20:00 and 23:59
             if (!TimeSpan.TryParse(dto.CutoffTime, out var cutoffSpan) ||
@@ -59,7 +57,7 @@ namespace SleepyKoala.Api.Controllers
 
             var user = await _context.Users
                 .Include(u => u.Settings)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+                .FirstOrDefaultAsync(u => u.Id == userId.Value);
 
             if (user == null || user.Settings == null) return NotFound();
 

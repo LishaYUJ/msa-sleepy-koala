@@ -54,8 +54,7 @@ namespace SleepyKoala.Tests
             var settings = new UserSettings
             {
                 UserId = user.Id,
-                CutoffTime = "22:00",
-                Timezone = "Pacific/Auckland"
+                CutoffTime = "22:00"
             };
             user.Settings = settings;
 
@@ -98,8 +97,7 @@ namespace SleepyKoala.Tests
             var settings = new UserSettings
             {
                 UserId = user.Id,
-                CutoffTime = "22:00",
-                Timezone = "Pacific/Auckland"
+                CutoffTime = "22:00"
             };
             user.Settings = settings;
 
@@ -140,8 +138,7 @@ namespace SleepyKoala.Tests
             var settings = new UserSettings
             {
                 UserId = user.Id,
-                CutoffTime = "22:00",
-                Timezone = "Pacific/Auckland"
+                CutoffTime = "22:00"
             };
             user.Settings = settings;
 
@@ -177,8 +174,7 @@ namespace SleepyKoala.Tests
             var settings = new UserSettings
             {
                 UserId = user.Id,
-                CutoffTime = "22:00",
-                Timezone = "Pacific/Auckland"
+                CutoffTime = "22:00"
             };
             user.Settings = settings;
 
@@ -224,8 +220,7 @@ namespace SleepyKoala.Tests
             var settings = new UserSettings
             {
                 UserId = user.Id,
-                CutoffTime = "22:00",
-                Timezone = "Pacific/Auckland"
+                CutoffTime = "22:00"
             };
             user.Settings = settings;
 

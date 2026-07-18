@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SleepyKoala.Api.Data;
 using SleepyKoala.Api.DTOs;
+using SleepyKoala.Api.Extensions;
 using SleepyKoala.Api.Services;
-using System.Security.Claims;
 
 namespace SleepyKoala.Api.Controllers
 {
@@ -25,15 +25,14 @@ namespace SleepyKoala.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSummary([FromQuery] string? localDate)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdStr == null) return Unauthorized();
-            var userId = Guid.Parse(userIdStr);
+            var userId = User.GetUserId();
+            if (userId == null) return Unauthorized();
 
             var user = await _context.Users
                 .Include(u => u.Settings)
                 .Include(u => u.UserBadges)
                 .ThenInclude(ub => ub.Badge)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+                .FirstOrDefaultAsync(u => u.Id == userId.Value);
 
             if (user == null || user.Settings == null) return NotFound();
 
@@ -49,10 +48,10 @@ namespace SleepyKoala.Api.Controllers
             }
 
             var todayCheckIn = await _context.CheckIns
-                .FirstOrDefaultAsync(c => c.UserId == userId && c.LocalCheckInDate == localDateStr);
+                .FirstOrDefaultAsync(c => c.UserId == userId.Value && c.LocalCheckInDate == localDateStr);
 
             var lastCheckIn = await _context.CheckIns
-                .Where(c => c.UserId == userId)
+                .Where(c => c.UserId == userId.Value)
                 .OrderByDescending(c => c.LocalCheckInDate)
                 .FirstOrDefaultAsync();
 

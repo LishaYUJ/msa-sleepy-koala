@@ -1,12 +1,13 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SleepyKoala.Api.Configuration;
 using SleepyKoala.Api.Data;
 using SleepyKoala.Api.Services;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+var jwtSettings = JwtSettings.FromConfiguration(builder.Configuration);
 
 // Add services to the container.
 
@@ -28,14 +29,15 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "super_secret_default_key"))
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        IssuerSigningKey = jwtSettings.CreateSecurityKey(),
+        ClockSkew = TimeSpan.FromMinutes(1)
     };
 });
 
 // 3. Application Services
+builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICheckInService, CheckInService>();
 
@@ -66,3 +68,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SleepyKoala.Api.Data;
 using SleepyKoala.Api.DTOs;
-using System.Security.Claims;
+using SleepyKoala.Api.Extensions;
 
 namespace SleepyKoala.Api.Controllers
 {
@@ -22,13 +22,12 @@ namespace SleepyKoala.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetBadges()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdStr == null) return Unauthorized();
-            var userId = Guid.Parse(userIdStr);
+            var userId = User.GetUserId();
+            if (userId == null) return Unauthorized();
 
             var allBadges = await _context.Badges.ToListAsync();
             var userBadges = await _context.UserBadges
-                .Where(ub => ub.UserId == userId)
+                .Where(ub => ub.UserId == userId.Value)
                 .ToListAsync();
 
             var unlockedIds = userBadges.Select(ub => ub.BadgeId).ToHashSet();

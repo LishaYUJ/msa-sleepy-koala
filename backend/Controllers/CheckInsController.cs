@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SleepyKoala.Api.Data;
 using SleepyKoala.Api.DTOs;
+using SleepyKoala.Api.Extensions;
 using SleepyKoala.Api.Services;
-using System.Security.Claims;
 
 namespace SleepyKoala.Api.Controllers
 {
@@ -25,12 +25,12 @@ namespace SleepyKoala.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCheckIn(CheckInRequest request)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdStr == null) return Unauthorized();
+            var userId = User.GetUserId();
+            if (userId == null) return Unauthorized();
 
             try
             {
-                var response = await _checkInService.CheckInAsync(Guid.Parse(userIdStr), request);
+                var response = await _checkInService.CheckInAsync(userId.Value, request);
                 if (response == null) return NotFound();
                 return Ok(response);
             }
@@ -47,12 +47,11 @@ namespace SleepyKoala.Api.Controllers
         [HttpGet("me")]
         public async Task<IActionResult> GetMyCheckIns()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdStr == null) return Unauthorized();
-            var userId = Guid.Parse(userIdStr);
+            var userId = User.GetUserId();
+            if (userId == null) return Unauthorized();
 
             var checkIns = await _context.CheckIns
-                .Where(c => c.UserId == userId)
+                .Where(c => c.UserId == userId.Value)
                 .OrderByDescending(c => c.LocalCheckInDate)
                 .Select(c => new CheckInHistoryDto
                 {
@@ -68,11 +67,10 @@ namespace SleepyKoala.Api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCheckIn(Guid id)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdStr == null) return Unauthorized();
-            var userId = Guid.Parse(userIdStr);
+            var userId = User.GetUserId();
+            if (userId == null) return Unauthorized();
 
-            var checkIn = await _context.CheckIns.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+            var checkIn = await _context.CheckIns.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId.Value);
             if (checkIn == null) return NotFound();
 
             _context.CheckIns.Remove(checkIn);

@@ -1,0 +1,260 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using SleepyKoala.Api.Data;
+using SleepyKoala.Api.DTOs;
+
+namespace SleepyKoala.Tests
+{
+    public sealed class SleepyKoalaApiFactory : WebApplicationFactory<Program>
+    {
+        public const string TestIssuer = "SleepyKoalaApi.Tests";
+        public const string TestAudience = "SleepyKoalaClient.Tests";
+        public const string TestJwtKey = "test_secret_key_that_is_long_enough_for_hmac_sha256_koala";
+
+        private SqliteConnection? _connection;
+
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Jwt:Key"] = TestJwtKey,
+                    ["Jwt:Issuer"] = TestIssuer,
+                    ["Jwt:Audience"] = TestAudience,
+                    ["ConnectionStrings:DefaultConnection"] = "DataSource=:memory:"
+                });
+            });
+
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
+
+                _connection = new SqliteConnection("DataSource=:memory:");
+                _connection.Open();
+
+                services.AddDbContext<ApplicationDbContext>(options =>
+                    options.UseSqlite(_connection));
+
+                using var serviceProvider = services.BuildServiceProvider();
+                using var scope = serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                db.Database.EnsureCreated();
+            });
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            _connection?.Dispose();
+        }
+    }
+
+    public class ApiIntegrationTests : IClassFixture<SleepyKoalaApiFactory>
+    {
+        private readonly SleepyKoalaApiFactory _factory;
+
+        public ApiIntegrationTests(SleepyKoalaApiFactory factory)
+        {
+            _factory = factory;
+        }
+
+        [Fact]
+        public async Task AuthToken_FromLogin_IsAcceptedBySettingsMe()
+        {
+            var client = _factory.CreateClient();
+            var credentials = await RegisterUserAsync(client);
+
+            var loginResponse = await client.PostAsJsonAsync("/api/Auth/login", new LoginRequest
+            {
+                Email = credentials.Email,
+                Password = credentials.Password
+            });
+
+            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+            var auth = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>();
+            Assert.NotNull(auth);
+            Assert.False(string.IsNullOrWhiteSpace(auth!.Token));
+
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.Token);
+            var settingsResponse = await client.GetAsync("/api/settings/me");
+
+            Assert.Equal(HttpStatusCode.OK, settingsResponse.StatusCode);
+            var settings = await settingsResponse.Content.ReadFromJsonAsync<SettingsDto>();
+            Assert.NotNull(settings);
+            Assert.Equal(credentials.Nickname, settings!.Nickname);
+            Assert.Equal("22:00", settings.CutoffTime);
+            Assert.Equal("system", settings.ThemePreference);
+        }
+
+        [Fact]
+        public async Task AuthToken_HasExpectedIssuerAudienceSubjectAndExpiration()
+        {
+            var client = _factory.CreateClient();
+            var credentials = await RegisterUserAsync(client);
+
+            var loginResponse = await client.PostAsJsonAsync("/api/Auth/login", new LoginRequest
+            {
+                Email = credentials.Email,
+                Password = credentials.Password
+            });
+            loginResponse.EnsureSuccessStatusCode();
+
+            var auth = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>();
+            Assert.NotNull(auth);
+
+            var token = new JwtSecurityTokenHandler().ReadJwtToken(auth!.Token);
+            Assert.Equal(SleepyKoalaApiFactory.TestIssuer, token.Issuer);
+            Assert.Contains(SleepyKoalaApiFactory.TestAudience, token.Audiences);
+            Assert.Equal(auth.UserId.ToString(), token.Claims.Single(claim => claim.Type == JwtRegisteredClaimNames.Sub).Value);
+            Assert.True(token.ValidTo > DateTime.UtcNow.AddDays(6));
+            Assert.True(token.ValidTo <= DateTime.UtcNow.AddDays(7).AddMinutes(1));
+        }
+
+        [Fact]
+        public async Task ProtectedApis_RejectMissingToken()
+        {
+            var client = _factory.CreateClient();
+
+            var getSettings = await client.GetAsync("/api/settings/me");
+            var putSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
+            {
+                Nickname = "NoToken",
+                CutoffTime = "22:00",
+                ThemePreference = "system"
+            });
+            var getSummary = await client.GetAsync("/api/me/summary");
+            var getBadges = await client.GetAsync("/api/badges/me");
+            var postCheckIn = await client.PostAsJsonAsync("/api/CheckIns", new CheckInRequest
+            {
+                LocalDate = "2026-07-16",
+                LocalTime = "21:30"
+            });
+            var getCheckIns = await client.GetAsync("/api/CheckIns/me");
+            var deleteCheckIn = await client.DeleteAsync($"/api/CheckIns/{Guid.NewGuid()}");
+
+            Assert.Equal(HttpStatusCode.Unauthorized, getSettings.StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, putSettings.StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, getSummary.StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, getBadges.StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, postCheckIn.StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, getCheckIns.StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, deleteCheckIn.StatusCode);
+        }
+
+        [Fact]
+        public async Task AuthenticatedUser_CanUseCurrentApiSurface()
+        {
+            var client = _factory.CreateClient();
+            var credentials = await RegisterUserAsync(client);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credentials.Token);
+
+            var updateSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
+            {
+                Nickname = "Sleepy Tester",
+                CutoffTime = "21:45",
+                ThemePreference = "dark"
+            });
+            Assert.Equal(HttpStatusCode.OK, updateSettings.StatusCode);
+
+            var invalidSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
+            {
+                Nickname = "Sleepy Tester",
+                CutoffTime = "02:00",
+                ThemePreference = "dark"
+            });
+            Assert.Equal(HttpStatusCode.BadRequest, invalidSettings.StatusCode);
+
+            var settingsResponse = await client.GetAsync("/api/settings/me");
+            Assert.Equal(HttpStatusCode.OK, settingsResponse.StatusCode);
+            var settings = await settingsResponse.Content.ReadFromJsonAsync<SettingsDto>();
+            Assert.Equal("Sleepy Tester", settings!.Nickname);
+            Assert.Equal("21:45", settings.CutoffTime);
+            Assert.Equal("dark", settings.ThemePreference);
+
+            var summaryBefore = await client.GetAsync("/api/me/summary?localDate=2026-07-16");
+            Assert.Equal(HttpStatusCode.OK, summaryBefore.StatusCode);
+            var before = await summaryBefore.Content.ReadFromJsonAsync<DashboardSummaryDto>();
+            Assert.NotNull(before);
+            Assert.False(before!.TodayCheckedIn);
+
+            var badgesBefore = await client.GetAsync("/api/badges/me");
+            Assert.Equal(HttpStatusCode.OK, badgesBefore.StatusCode);
+            var badgeSummary = await badgesBefore.Content.ReadFromJsonAsync<BadgesSummaryDto>();
+            Assert.NotNull(badgeSummary);
+            Assert.True(badgeSummary!.Locked.Count >= 3);
+
+            var checkInResponse = await client.PostAsJsonAsync("/api/CheckIns", new CheckInRequest
+            {
+                LocalDate = "2026-07-16",
+                LocalTime = "21:30"
+            });
+            Assert.Equal(HttpStatusCode.OK, checkInResponse.StatusCode);
+            var checkIn = await checkInResponse.Content.ReadFromJsonAsync<CheckInResponse>();
+            Assert.NotNull(checkIn);
+            Assert.Equal("onTime", checkIn!.Status);
+
+            var duplicateCheckIn = await client.PostAsJsonAsync("/api/CheckIns", new CheckInRequest
+            {
+                LocalDate = "2026-07-16",
+                LocalTime = "21:30"
+            });
+            Assert.Equal(HttpStatusCode.BadRequest, duplicateCheckIn.StatusCode);
+
+            var historyResponse = await client.GetAsync("/api/CheckIns/me");
+            Assert.Equal(HttpStatusCode.OK, historyResponse.StatusCode);
+            var history = await historyResponse.Content.ReadFromJsonAsync<List<CheckInHistoryDto>>();
+            Assert.Single(history!);
+            Assert.Equal(checkIn.CheckInId, history![0].Id);
+
+            var summaryAfter = await client.GetAsync("/api/me/summary?localDate=2026-07-16");
+            Assert.Equal(HttpStatusCode.OK, summaryAfter.StatusCode);
+            var after = await summaryAfter.Content.ReadFromJsonAsync<DashboardSummaryDto>();
+            Assert.True(after!.TodayCheckedIn);
+            Assert.Equal("onTime", after.TodayStatus);
+
+            var leaderboard = await client.GetAsync("/api/Leaderboard");
+            Assert.Equal(HttpStatusCode.OK, leaderboard.StatusCode);
+            var leaders = await leaderboard.Content.ReadFromJsonAsync<List<LeaderboardDto>>();
+            Assert.Contains(leaders!, item => item.Nickname == "Sleepy Tester");
+
+            var deleteResponse = await client.DeleteAsync($"/api/CheckIns/{checkIn.CheckInId}");
+            Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+            var deleteAgain = await client.DeleteAsync($"/api/CheckIns/{checkIn.CheckInId}");
+            Assert.Equal(HttpStatusCode.NotFound, deleteAgain.StatusCode);
+        }
+
+        private static async Task<TestCredentials> RegisterUserAsync(HttpClient client)
+        {
+            var unique = Guid.NewGuid().ToString("N");
+            var request = new RegisterRequest
+            {
+                Email = $"user-{unique}@example.com",
+                Password = "Password123!",
+                Nickname = $"Tester-{unique[..8]}"
+            };
+
+            var response = await client.PostAsJsonAsync("/api/Auth/register", request);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
+            Assert.NotNull(auth);
+            Assert.False(string.IsNullOrWhiteSpace(auth!.Token));
+
+            return new TestCredentials(request.Email, request.Password, request.Nickname, auth.Token);
+        }
+
+        private sealed record TestCredentials(string Email, string Password, string Nickname, string Token);
+    }
+}

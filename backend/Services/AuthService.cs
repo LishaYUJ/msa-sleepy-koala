@@ -1,6 +1,6 @@
 using System;
 using System.Security.Claims;
-using System.Text;
+using SleepyKoala.Api.Configuration;
 using SleepyKoala.Api.Data;
 using SleepyKoala.Api.DTOs;
 using SleepyKoala.Api.Models;
@@ -19,12 +19,12 @@ namespace SleepyKoala.Api.Services
     public class AuthService : IAuthService
     {
         private readonly ApplicationDbContext _context;
-        private readonly IConfiguration _config;
+        private readonly JwtSettings _jwtSettings;
 
-        public AuthService(ApplicationDbContext context, IConfiguration config)
+        public AuthService(ApplicationDbContext context, JwtSettings jwtSettings)
         {
             _context = context;
-            _config = config;
+            _jwtSettings = jwtSettings;
         }
 
         public async Task<AuthResponse?> RegisterAsync(RegisterRequest request)
@@ -80,9 +80,7 @@ namespace SleepyKoala.Api.Services
 
         private string GenerateJwtToken(User user)
         {
-            var keyStr = _config["Jwt:Key"] ?? "super_secret_key_that_is_long_enough_for_hmac_sha256_at_least_32_bytes";
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var credentials = new SigningCredentials(_jwtSettings.CreateSecurityKey(), SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
@@ -92,10 +90,10 @@ namespace SleepyKoala.Api.Services
             };
 
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
+                issuer: _jwtSettings.Issuer,
+                audience: _jwtSettings.Audience,
                 claims: claims,
-                expires: DateTime.Now.AddDays(7),
+                expires: DateTime.UtcNow.AddDays(7),
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
