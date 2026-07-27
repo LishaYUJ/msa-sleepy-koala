@@ -114,8 +114,9 @@ namespace SleepyKoala.Tests
             Assert.NotNull(auth);
 
             var token = new JwtSecurityTokenHandler().ReadJwtToken(auth!.Token);
-            Assert.Equal(SleepyKoalaApiFactory.TestIssuer, token.Issuer);
-            Assert.Contains(SleepyKoalaApiFactory.TestAudience, token.Audiences);
+            var jwtSettings = _factory.Services.GetRequiredService<SleepyKoala.Api.Configuration.JwtSettings>();
+            Assert.Equal(jwtSettings.Issuer, token.Issuer);
+            Assert.Contains(jwtSettings.Audience, token.Audiences);
             Assert.Equal(auth.UserId.ToString(), token.Claims.Single(claim => claim.Type == JwtRegisteredClaimNames.Sub).Value);
             Assert.True(token.ValidTo > DateTime.UtcNow.AddDays(6));
             Assert.True(token.ValidTo <= DateTime.UtcNow.AddDays(7).AddMinutes(1));
