@@ -1,0 +1,195 @@
+import React, { useEffect } from 'react';
+import { useStore } from '../stores/useStore';
+import { GlassCard } from '../components/GlassCard';
+import { Award, Lock, Sparkles } from 'lucide-react';
+
+export const Badges: React.FC = () => {
+  const { badges, loadBadges, isLoading } = useStore();
+
+  useEffect(() => {
+    loadBadges();
+  }, []);
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  return (
+    <div className="badges-view">
+      <style>{`
+        .badges-view {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          color: var(--text-main);
+          width: 100%;
+        }
+
+        .badges-header {
+          margin-bottom: 8px;
+        }
+
+        .badges-header h1 {
+          font-size: 2rem;
+          margin-bottom: 6px;
+        }
+
+        .badges-header p {
+          color: var(--text-muted);
+          font-size: 1rem;
+        }
+
+        .badge-museum-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        @media (min-width: 576px) {
+          .badge-museum-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (min-width: 992px) {
+          .badge-museum-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
+        .museum-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: 28px 24px;
+          gap: 16px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .museum-card.locked {
+          opacity: 0.55;
+          background-color: rgba(0,0,0,0.03);
+        }
+
+        .badge-shield {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: var(--card-bg);
+          border: 1px dashed var(--input-border);
+          position: relative;
+          transition: transform var(--transition-normal);
+        }
+
+        .museum-card:hover:not(.locked) .badge-shield {
+          transform: scale(1.1) rotate(5deg);
+        }
+
+        .badge-shield.unlocked {
+          background: linear-gradient(135deg, rgba(92, 95, 200, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
+          border: 2px solid var(--primary);
+          box-shadow: 0 8px 16px var(--primary-glow);
+        }
+
+        .lock-overlay {
+          position: absolute;
+          bottom: 2px;
+          right: 2px;
+          background-color: var(--text-main);
+          border: 2px solid var(--card-bg);
+          color: var(--text-inverse);
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .badge-title {
+          font-family: var(--font-title);
+          font-weight: 700;
+          font-size: 1.15rem;
+          color: var(--text-main);
+        }
+
+        .badge-desc {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+          line-height: 1.4;
+          flex: 1;
+        }
+
+        .badge-date {
+          font-size: 0.75rem;
+          color: var(--secondary);
+          font-weight: 600;
+          margin-top: 6px;
+          background-color: var(--card-bg);
+          padding: 4px 8px;
+          border-radius: 8px;
+        }
+      `}</style>
+
+      {/* Header Info */}
+      <div className="badges-header">
+        <h1 className="brand-font">Achievements Museum</h1>
+        <p>Your bedtime milestones! Build streaks to earn rare koala caregiver badges.</p>
+      </div>
+
+      {isLoading && !badges ? (
+        <span>Loading your museum shelf...</span>
+      ) : !badges ? (
+        <span>No badges loaded. Check back later!</span>
+      ) : (
+        <div className="badge-museum-grid">
+          {/* Render Unlocked Badges */}
+          {badges.unlocked.map((badge, index) => (
+            <GlassCard className="museum-card" key={`unlocked-${index}`}>
+              <div className="badge-shield unlocked">
+                <Award size={40} color="var(--primary)" fill="none" />
+                <Sparkles size={16} color="var(--secondary)" className="crown-icon" style={{ position: 'absolute', top: '-6px', right: '-6px' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, alignItems: 'center' }}>
+                <span className="badge-title">{badge.name}</span>
+                <span className="badge-desc">{badge.description}</span>
+                <span className="badge-date">Unlocked {formatDate(badge.unlockedAt)}</span>
+              </div>
+            </GlassCard>
+          ))}
+
+          {/* Render Locked Badges */}
+          {badges.locked.map((badge, index) => (
+            <GlassCard className="museum-card locked" key={`locked-${index}`}>
+              <div className="badge-shield">
+                <Award size={40} color="var(--text-muted)" />
+                <div className="lock-overlay">
+                  <Lock size={12} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, alignItems: 'center' }}>
+                <span className="badge-title" style={{ color: 'var(--text-muted)' }}>{badge.name}</span>
+                <span className="badge-desc">{badge.description}</span>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
