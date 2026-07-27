@@ -19,10 +19,6 @@ The MVP should prioritise a working application over excessive visual polish or 
 ### User Settings
 
 - Set bedtime cutoff time, such as 12:00 AM
-- Store user timezone
-  - User selects timezone via a **scrollable picker** (wheel/drum-roll style selector)
-  - Backend exposes a `GET /api/timezones` endpoint returning all valid IANA timezone names grouped by region
-  - Frontend displays these in a scrollable list for user-friendly timezone selection
 - Update nickname
 - Store theme preference if needed
 
