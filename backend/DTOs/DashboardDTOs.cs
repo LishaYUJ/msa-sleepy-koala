@@ -10,6 +10,7 @@ namespace SleepyKoala.Api.DTOs
         public int LongestStreak { get; set; }
         public required string KoalaMood { get; set; }
         public required string CutoffTime { get; set; }
+        public int ConsecutiveBadDays { get; set; }
         public List<BadgeDto> Badges { get; set; } = new List<BadgeDto>();
     }
 

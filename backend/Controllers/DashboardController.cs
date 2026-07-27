@@ -70,6 +70,43 @@ namespace SleepyKoala.Api.Controllers
                 displayStreak = 0;
             }
 
+            int consecutiveBadDays = 0;
+            if (DateOnly.TryParse(localDateStr, out var todayDate))
+            {
+                var checkInMap = await _context.CheckIns
+                    .Where(c => c.UserId == userId.Value)
+                    .ToDictionaryAsync(c => c.LocalCheckInDate, c => c.Status);
+
+                var dateToCheck = todayDate.AddDays(-1);
+                var registerDate = DateOnly.FromDateTime(user.CreatedAtUtc);
+
+                for (int i = 0; i < 30; i++)
+                {
+                    if (dateToCheck < registerDate)
+                    {
+                        break;
+                    }
+
+                    var dateStr = dateToCheck.ToString("yyyy-MM-dd");
+                    if (checkInMap.TryGetValue(dateStr, out var checkStatus))
+                    {
+                        if (checkStatus == "onTime")
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            consecutiveBadDays++;
+                        }
+                    }
+                    else
+                    {
+                        consecutiveBadDays++;
+                    }
+                    dateToCheck = dateToCheck.AddDays(-1);
+                }
+            }
+
             var mood = _checkInService.CalculateKoalaMood(user, lastCheckIn?.Status ?? "onTime");
 
             var summary = new DashboardSummaryDto
@@ -80,6 +117,7 @@ namespace SleepyKoala.Api.Controllers
                 LongestStreak = user.LongestStreak,
                 KoalaMood = mood,
                 CutoffTime = user.Settings.CutoffTime,
+                ConsecutiveBadDays = consecutiveBadDays,
                 Badges = user.UserBadges.Select(ub => new BadgeDto
                 {
                     Name = ub.Badge!.Name,
