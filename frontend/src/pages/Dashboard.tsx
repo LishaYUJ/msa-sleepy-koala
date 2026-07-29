@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useStore, getLocalDateString } from '../stores/useStore';
+import { useStore, getCurrentSleepDateString } from '../stores/useStore';
 import { GlassCard } from '../components/GlassCard';
 import { KoalaMascot } from '../components/KoalaMascot';
 import { Moon, Star, Flame, Trophy, Clock, CheckCircle, AlertTriangle, X, Award } from 'lucide-react';
@@ -15,8 +15,8 @@ export const Dashboard: React.FC = () => {
 
   // Sync state on load
   useEffect(() => {
-    const todayStr = getLocalDateString();
-    loadSummary(todayStr);
+    const sleepDate = getCurrentSleepDateString();
+    loadSummary(sleepDate);
   }, []);
 
   // Update current time periodically for real-time mood/cutoff transitions

@@ -88,6 +88,19 @@ export function getLocalTimeString(date: Date = new Date()): string {
   return `${hours}:${minutes}`;
 }
 
+export function getCurrentSleepDateString(date: Date = new Date()): string {
+  const currentMinutes = date.getHours() * 60 + date.getMinutes();
+  const windowStartMinutes = 21 * 60;
+
+  if (currentMinutes < windowStartMinutes) {
+    const previous = new Date(date);
+    previous.setDate(previous.getDate() - 1);
+    return getLocalDateString(previous);
+  }
+
+  return getLocalDateString(date);
+}
+
 export const useStore = create<AppState>((set, get) => ({
   token: localStorage.getItem('token'),
   userId: localStorage.getItem('userId'),
@@ -127,8 +140,8 @@ export const useStore = create<AppState>((set, get) => ({
         isLoading: false,
       });
 
-      const todayStr = getLocalDateString();
-      await get().loadSummary(todayStr);
+      const sleepDate = getCurrentSleepDateString();
+      await get().loadSummary(sleepDate);
     } catch (err: any) {
       set({ isLoading: false, error: err.body?.message || err.message });
       throw err;
@@ -153,8 +166,8 @@ export const useStore = create<AppState>((set, get) => ({
         isLoading: false,
       });
 
-      const todayStr = getLocalDateString();
-      await get().loadSummary(todayStr);
+      const sleepDate = getCurrentSleepDateString();
+      await get().loadSummary(sleepDate);
     } catch (err: any) {
       set({ isLoading: false, error: err.body?.message || err.message });
       throw err;
@@ -185,7 +198,7 @@ export const useStore = create<AppState>((set, get) => ({
     
     set({ isLoading: true, error: null });
     try {
-      const dateParam = localDateString || getLocalDateString();
+      const dateParam = localDateString || getCurrentSleepDateString();
       const response = await api.get<UserSummary>(`/api/me/summary?localDate=${dateParam}`, token);
       set({ summary: response, isLoading: false });
     } catch (err: any) {
@@ -209,7 +222,7 @@ export const useStore = create<AppState>((set, get) => ({
       set({ isLoading: false });
       
       // Reload summary following successful check-in
-      await get().loadSummary(localDate);
+      await get().loadSummary(response.localCheckInDate || getCurrentSleepDateString());
       return response;
     } catch (err: any) {
       set({ isLoading: false, error: err.body?.message || err.message });
@@ -227,8 +240,8 @@ export const useStore = create<AppState>((set, get) => ({
       set({ isLoading: false });
       
       // Reload relevant info
-      const todayStr = localDateString || getLocalDateString();
-      await get().loadSummary(todayStr);
+      const sleepDate = localDateString || getCurrentSleepDateString();
+      await get().loadSummary(sleepDate);
       await get().loadHistory();
     } catch (err: any) {
       set({ isLoading: false, error: err.body?.message || err.message });

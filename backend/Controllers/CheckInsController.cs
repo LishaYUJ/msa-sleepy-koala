@@ -36,7 +36,11 @@ namespace SleepyKoala.Api.Controllers
             }
             catch (InvalidOperationException ex) when (ex.Message == "DuplicateCheckIn")
             {
-                return BadRequest(new { error = "DuplicateCheckIn", message = "You have already checked in today." });
+                return BadRequest(new { error = "DuplicateCheckIn", message = "You have already checked in for this sleep day." });
+            }
+            catch (InvalidOperationException ex) when (ex.Message == "CheckInWindowClosed")
+            {
+                return BadRequest(new { error = "CheckInWindowClosed", message = "Check-in is only available from 21:00 to 02:00." });
             }
             catch (ArgumentException ex)
             {

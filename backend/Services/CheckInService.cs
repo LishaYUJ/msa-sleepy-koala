@@ -31,7 +31,7 @@ namespace SleepyKoala.Api.Services
             if (user == null || user.Settings == null) return null;
 
             // Validate LocalDate format (yyyy-MM-dd)
-            if (!DateTime.TryParseExact(request.LocalDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+            if (!DateOnly.TryParseExact(request.LocalDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var localDate))
             {
                 throw new ArgumentException("LocalDate must be in 'yyyy-MM-dd' format.");
             }
@@ -43,22 +43,27 @@ namespace SleepyKoala.Api.Services
                 throw new ArgumentException("LocalTime must be a valid time of day in 'HH:mm' or 'HH:mm:ss' format.");
             }
 
-            // Prevent duplicate check-in
-            var alreadyCheckedIn = await _context.CheckIns
-                .AnyAsync(c => c.UserId == userId && c.LocalCheckInDate == request.LocalDate);
-            if (alreadyCheckedIn)
-            {
-                throw new InvalidOperationException("DuplicateCheckIn");
-            }
-
-            // Determine if onTime or late
             if (!TimeSpan.TryParse(user.Settings.CutoffTime, out var cutoffTimeSpan))
             {
                 cutoffTimeSpan = new TimeSpan(22, 0, 0); // Fallback to 22:00
             }
 
-            // Compare local check-in time against bedtime cutoff
-            string status = localTimeSpan <= cutoffTimeSpan ? "onTime" : "late";
+            var checkInWindow = ResolveCheckInWindow(localDate, localTimeSpan, cutoffTimeSpan);
+            if (checkInWindow.Status == null)
+            {
+                throw new InvalidOperationException("CheckInWindowClosed");
+            }
+
+            var sleepDate = checkInWindow.SleepDate.ToString("yyyy-MM-dd");
+            var status = checkInWindow.Status;
+
+            // Prevent duplicate check-in for the sleep date, not the click date.
+            var alreadyCheckedIn = await _context.CheckIns
+                .AnyAsync(c => c.UserId == userId && c.LocalCheckInDate == sleepDate);
+            if (alreadyCheckedIn)
+            {
+                throw new InvalidOperationException("DuplicateCheckIn");
+            }
 
             // Determine streak using submitted local date
             var lastCheckIn = await _context.CheckIns
@@ -75,7 +80,7 @@ namespace SleepyKoala.Api.Services
             }
             else
             {
-                if (DateOnly.TryParse(request.LocalDate, out var currentLocalDate) &&
+                if (DateOnly.TryParse(sleepDate, out var currentLocalDate) &&
                     DateOnly.TryParse(lastCheckIn.LocalCheckInDate, out var lastLocalDate))
                 {
                     int dayDifference = currentLocalDate.DayNumber - lastLocalDate.DayNumber;
@@ -138,7 +143,7 @@ namespace SleepyKoala.Api.Services
             var checkIn = new CheckIn
             {
                 UserId = userId,
-                LocalCheckInDate = request.LocalDate,
+                LocalCheckInDate = sleepDate,
                 Status = status,
                 CreatedAtUtc = DateTime.UtcNow
             };
@@ -154,7 +159,7 @@ namespace SleepyKoala.Api.Services
             {
                 CheckInId = checkIn.Id,
                 Status = status,
-                LocalCheckInDate = request.LocalDate,
+                LocalCheckInDate = sleepDate,
                 CurrentStreak = user.CurrentStreak,
                 KoalaMood = mood,
                 UnlockedBadges = unlockedBadges
@@ -196,6 +201,28 @@ namespace SleepyKoala.Api.Services
                 }
             }
             return newBadges;
+        }
+
+        private static (DateOnly SleepDate, string? Status) ResolveCheckInWindow(DateOnly localDate, TimeSpan localTime, TimeSpan cutoffTime)
+        {
+            var windowStart = new TimeSpan(21, 0, 0);
+            var windowEnd = new TimeSpan(2, 0, 0);
+
+            var isEveningWindow = localTime >= windowStart;
+            var isAfterMidnightWindow = localTime <= windowEnd;
+
+            if (!isEveningWindow && !isAfterMidnightWindow)
+            {
+                return (localDate, null);
+            }
+
+            var sleepDate = isAfterMidnightWindow ? localDate.AddDays(-1) : localDate;
+            var isMidnightCutoff = cutoffTime == TimeSpan.Zero;
+            var isOnTime = isMidnightCutoff
+                ? isEveningWindow || localTime == TimeSpan.Zero
+                : isEveningWindow && localTime <= cutoffTime;
+
+            return (sleepDate, isOnTime ? "onTime" : "late");
         }
     }
 }

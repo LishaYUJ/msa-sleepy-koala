@@ -124,6 +124,227 @@ namespace SleepyKoala.Tests
         }
 
         [Fact]
+        public async Task CheckInAsync_AfterMidnight_StoresPreviousSleepDateAndMarksLate()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@example.com",
+                Nickname = "Test",
+                PasswordHash = "hash",
+                CurrentStreak = 4,
+                LongestStreak = 4
+            };
+            var settings = new UserSettings
+            {
+                UserId = user.Id,
+                CutoffTime = "22:00"
+            };
+            user.Settings = settings;
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var request = new CheckInRequest
+            {
+                LocalDate = "2026-07-29",
+                LocalTime = "00:10"
+            };
+
+            // Act
+            var result = await _service.CheckInAsync(user.Id, request);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("late", result.Status);
+            Assert.Equal("2026-07-28", result.LocalCheckInDate);
+            Assert.Equal(0, result.CurrentStreak);
+        }
+
+        [Fact]
+        public async Task CheckInAsync_AtTwoAm_StillAllowsLatePreviousSleepDate()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@example.com",
+                Nickname = "Test",
+                PasswordHash = "hash",
+                CurrentStreak = 1,
+                LongestStreak = 1
+            };
+            var settings = new UserSettings
+            {
+                UserId = user.Id,
+                CutoffTime = "22:00"
+            };
+            user.Settings = settings;
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var request = new CheckInRequest
+            {
+                LocalDate = "2026-07-29",
+                LocalTime = "02:00"
+            };
+
+            // Act
+            var result = await _service.CheckInAsync(user.Id, request);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("late", result.Status);
+            Assert.Equal("2026-07-28", result.LocalCheckInDate);
+        }
+
+        [Fact]
+        public async Task CheckInAsync_AfterTwoAm_RejectsCheckIn()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@example.com",
+                Nickname = "Test",
+                PasswordHash = "hash",
+                CurrentStreak = 1
+            };
+            var settings = new UserSettings
+            {
+                UserId = user.Id,
+                CutoffTime = "22:00"
+            };
+            user.Settings = settings;
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var request = new CheckInRequest
+            {
+                LocalDate = "2026-07-29",
+                LocalTime = "02:01"
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CheckInAsync(user.Id, request));
+            Assert.Equal("CheckInWindowClosed", ex.Message);
+        }
+
+        [Fact]
+        public async Task CheckInAsync_BeforeNinePm_RejectsCheckIn()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@example.com",
+                Nickname = "Test",
+                PasswordHash = "hash",
+                CurrentStreak = 1
+            };
+            var settings = new UserSettings
+            {
+                UserId = user.Id,
+                CutoffTime = "22:00"
+            };
+            user.Settings = settings;
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var request = new CheckInRequest
+            {
+                LocalDate = "2026-07-28",
+                LocalTime = "20:59"
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CheckInAsync(user.Id, request));
+            Assert.Equal("CheckInWindowClosed", ex.Message);
+        }
+
+        [Fact]
+        public async Task CheckInAsync_MidnightCutoff_AllowsMidnightAsOnTime()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@example.com",
+                Nickname = "Test",
+                PasswordHash = "hash",
+                CurrentStreak = 0,
+                LongestStreak = 0
+            };
+            var settings = new UserSettings
+            {
+                UserId = user.Id,
+                CutoffTime = "00:00"
+            };
+            user.Settings = settings;
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var request = new CheckInRequest
+            {
+                LocalDate = "2026-07-29",
+                LocalTime = "00:00"
+            };
+
+            // Act
+            var result = await _service.CheckInAsync(user.Id, request);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("onTime", result.Status);
+            Assert.Equal("2026-07-28", result.LocalCheckInDate);
+            Assert.Equal(1, result.CurrentStreak);
+        }
+
+        [Fact]
+        public async Task CheckInAsync_AfterMidnightDuplicate_UsesPreviousSleepDate()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@example.com",
+                Nickname = "Test",
+                PasswordHash = "hash",
+                CurrentStreak = 1
+            };
+            var settings = new UserSettings
+            {
+                UserId = user.Id,
+                CutoffTime = "22:00"
+            };
+            user.Settings = settings;
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            await _service.CheckInAsync(user.Id, new CheckInRequest
+            {
+                LocalDate = "2026-07-28",
+                LocalTime = "21:30"
+            });
+
+            var afterMidnightRequest = new CheckInRequest
+            {
+                LocalDate = "2026-07-29",
+                LocalTime = "00:30"
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CheckInAsync(user.Id, afterMidnightRequest));
+            Assert.Equal("DuplicateCheckIn", ex.Message);
+        }
+
+        [Fact]
         public async Task CheckInAsync_DuplicateDate_ThrowsException()
         {
             // Arrange

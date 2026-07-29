@@ -45,12 +45,13 @@ namespace SleepyKoala.Api.Controllers
             var userId = User.GetUserId();
             if (userId == null) return Unauthorized();
 
-            // Validate bedtime cutoff time is between 20:00 and 23:59
+            // Validate bedtime cutoff time is between 21:00 and midnight.
             if (!TimeSpan.TryParse(dto.CutoffTime, out var cutoffSpan) ||
-                cutoffSpan < new TimeSpan(20, 0, 0) ||
-                cutoffSpan > new TimeSpan(23, 59, 59))
+                (cutoffSpan != TimeSpan.Zero &&
+                (cutoffSpan < new TimeSpan(21, 0, 0) ||
+                 cutoffSpan > new TimeSpan(23, 59, 59))))
             {
-                return BadRequest(new { error = "InvalidCutoffTime", message = "Bedtime (CutoffTime) must be between 20:00 and 23:59 to avoid cross-midnight ambiguity for MVP." });
+                return BadRequest(new { error = "InvalidCutoffTime", message = "Bedtime (CutoffTime) must be between 21:00 and 00:00 for the MVP." });
             }
 
 

@@ -176,6 +176,22 @@ namespace SleepyKoala.Tests
             });
             Assert.Equal(HttpStatusCode.BadRequest, invalidSettings.StatusCode);
 
+            var midnightSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
+            {
+                Nickname = "Sleepy Tester",
+                CutoffTime = "00:00",
+                ThemePreference = "dark"
+            });
+            Assert.Equal(HttpStatusCode.OK, midnightSettings.StatusCode);
+
+            updateSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
+            {
+                Nickname = "Sleepy Tester",
+                CutoffTime = "21:45",
+                ThemePreference = "dark"
+            });
+            Assert.Equal(HttpStatusCode.OK, updateSettings.StatusCode);
+
             var settingsResponse = await client.GetAsync("/api/settings/me");
             Assert.Equal(HttpStatusCode.OK, settingsResponse.StatusCode);
             var settings = await settingsResponse.Content.ReadFromJsonAsync<SettingsDto>();

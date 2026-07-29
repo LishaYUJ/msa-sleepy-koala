@@ -52,7 +52,7 @@ export const Settings: React.FC = () => {
       return;
     }
 
-    // Basic cutoff validation: must be between 20:00 and 23:59
+    // Basic cutoff validation: must be between 21:00 and midnight
     const regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
     if (!regex.test(cutoffTime)) {
       setErrorLocal('Bedtime must be in HH:mm 24-hour format.');
@@ -60,8 +60,9 @@ export const Settings: React.FC = () => {
     }
 
     const [hours, minutes] = cutoffTime.split(':').map(Number);
-    if (hours < 20 || hours > 23 || (hours === 23 && minutes > 59)) {
-      setErrorLocal('Bedtime (cutoff time) must be between 20:00 and 23:59 for the MVP.');
+    const isMidnightCutoff = hours === 0 && minutes === 0;
+    if (!isMidnightCutoff && (hours < 21 || hours > 23 || (hours === 23 && minutes > 59))) {
+      setErrorLocal('Bedtime (cutoff time) must be between 21:00 and 00:00 for the MVP.');
       return;
     }
 
@@ -231,7 +232,7 @@ export const Settings: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="settingsBedtime">Target Bedtime (evening: 20:00–23:59)</label>
+              <label className="form-label" htmlFor="settingsBedtime">Target Bedtime (21:00-00:00)</label>
               <input
                 id="settingsBedtime"
                 type="text"
@@ -241,7 +242,7 @@ export const Settings: React.FC = () => {
                 onChange={(e) => setCutoffTime(e.target.value)}
               />
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-                Adjusting target bedtime changes when you must check in to be marked "On Time".
+                Check-in is available from 21:00 to 02:00. After your target bedtime it is marked late.
               </p>
             </div>
 
