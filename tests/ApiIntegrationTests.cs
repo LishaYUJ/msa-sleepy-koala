@@ -252,6 +252,26 @@ namespace SleepyKoala.Tests
             Assert.Equal(HttpStatusCode.NotFound, deleteAgain.StatusCode);
         }
 
+        [Fact]
+        public async Task DashboardSummary_InferMissingAfterCheckInWindowAndReportsFatigue()
+        {
+            var client = _factory.CreateClient();
+            var credentials = await RegisterUserAsync(client);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credentials.Token);
+
+            var sleepDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var summaryResponse = await client.GetAsync($"/api/me/summary?localDate={sleepDate}&localTime=10:00");
+
+            Assert.Equal(HttpStatusCode.OK, summaryResponse.StatusCode);
+            var summary = await summaryResponse.Content.ReadFromJsonAsync<DashboardSummaryDto>();
+            Assert.NotNull(summary);
+            Assert.False(summary!.TodayCheckedIn);
+            Assert.Equal("missing", summary.TodayStatus);
+            Assert.Equal(0, summary.CurrentStreak);
+            Assert.Equal(2, summary.FatigueScore);
+            Assert.Equal("healthy", summary.FatigueState);
+        }
+
         private static async Task<TestCredentials> RegisterUserAsync(HttpClient client)
         {
             var unique = Guid.NewGuid().ToString("N");

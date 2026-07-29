@@ -14,6 +14,8 @@ export interface UserSummary {
   longestStreak: int;
   koalaMood: string;
   consecutiveBadDays: number;
+  fatigueScore: number;
+  fatigueState: 'healthy' | 'weak' | 'veryWeak';
   cutoffTime: string;
   badges: Badge[];
 }
@@ -199,7 +201,8 @@ export const useStore = create<AppState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const dateParam = localDateString || getCurrentSleepDateString();
-      const response = await api.get<UserSummary>(`/api/me/summary?localDate=${dateParam}`, token);
+      const timeParam = getLocalTimeString();
+      const response = await api.get<UserSummary>(`/api/me/summary?localDate=${dateParam}&localTime=${timeParam}`, token);
       set({ summary: response, isLoading: false });
     } catch (err: any) {
       set({ isLoading: false, error: err.body?.message || err.message });

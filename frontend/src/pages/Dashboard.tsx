@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStore, getCurrentSleepDateString } from '../stores/useStore';
 import { GlassCard } from '../components/GlassCard';
 import { KoalaMascot } from '../components/KoalaMascot';
-import { Moon, Star, Flame, Trophy, Clock, CheckCircle, AlertTriangle, X, Award } from 'lucide-react';
+import { Moon, Star, Flame, Trophy, Clock, CheckCircle, AlertTriangle, X, Award, BatteryMedium } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { summary, loadSummary, performCheckIn, isLoading, error } = useStore();
@@ -23,52 +23,99 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
+      loadSummary(getCurrentSleepDateString());
     }, 30000); // 30 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [loadSummary]);
+
+  const getCutoffMinutes = (): number => {
+    if (!summary?.cutoffTime) return 22 * 60;
+    const [cutoffHour, cutoffMin] = summary.cutoffTime.split(':').map(Number);
+    return cutoffHour * 60 + cutoffMin;
+  };
+
+  const getCurrentMinutes = (): number => currentTime.getHours() * 60 + currentTime.getMinutes();
+
+  const getWindingDownStartMinutes = (): number => {
+    const cutoffMinutes = getCutoffMinutes();
+    return cutoffMinutes === 0 ? 23 * 60 + 30 : cutoffMinutes - 30;
+  };
+
+  const isInCheckInWindow = (): boolean => {
+    const currentMinutes = getCurrentMinutes();
+    return currentMinutes >= 21 * 60 || currentMinutes <= 2 * 60;
+  };
+
+  const isBeforeMorningWake = (): boolean => getCurrentMinutes() < 8 * 60;
+
+  const isWindingDownWindow = (): boolean => {
+    const currentMinutes = getCurrentMinutes();
+    const cutoffMinutes = getCutoffMinutes();
+    const startMinutes = getWindingDownStartMinutes();
+
+    if (cutoffMinutes === 0) {
+      return currentMinutes >= startMinutes;
+    }
+
+    return currentMinutes >= startMinutes && currentMinutes < cutoffMinutes;
+  };
+
+  const isWaitingLateWindow = (): boolean => {
+    const currentMinutes = getCurrentMinutes();
+    const cutoffMinutes = getCutoffMinutes();
+
+    if (cutoffMinutes === 0) {
+      return currentMinutes <= 2 * 60;
+    }
+
+    return currentMinutes >= cutoffMinutes || currentMinutes <= 2 * 60;
+  };
 
   const resolveKoalaMood = (): string => {
     if (!summary) return 'default';
 
-    // 1. Today already checked in
     if (summary.todayCheckedIn) {
-      return summary.todayStatus === 'late' ? 'LATE_SLEEPING' : 'SLEEPING';
+      if (isBeforeMorningWake() || isInCheckInWindow()) {
+        return summary.todayStatus === 'late' ? 'LATE_SLEEPING' : 'SLEEPING';
+      }
+      return summary.fatigueState === 'veryWeak'
+        ? 'VERY_WEAK'
+        : summary.fatigueState === 'weak'
+          ? 'WEAK'
+          : 'ENJOYING_LIFE';
     }
 
-    // 2. Recent consecutive bad days >= 4
-    if (summary.consecutiveBadDays >= 4) {
-      return 'VERY_WEAK';
+    if (summary.todayStatus === 'missing') {
+      if (isBeforeMorningWake()) {
+        return 'MISSED_SLEEPING';
+      }
+      return summary.fatigueState === 'veryWeak' ? 'VERY_WEAK' : 'WEAK';
     }
 
-    // 3. Recent consecutive bad days >= 2
-    if (summary.consecutiveBadDays >= 2) {
-      return 'WEAK';
+    if (isWindingDownWindow()) {
+      return 'MEDITATING';
     }
 
-    // Parse cutoffTime (format HH:mm)
-    const cutoffTime = summary.cutoffTime || '22:00';
-    const [cutoffHour, cutoffMin] = cutoffTime.split(':').map(Number);
-    const cutoffMinutes = cutoffHour * 60 + cutoffMin;
-
-    const currentHour = currentTime.getHours();
-    const currentMin = currentTime.getMinutes();
-    const currentMinutes = currentHour * 60 + currentMin;
-
-    // 4. Past cutoff
-    if (currentMinutes >= cutoffMinutes) {
-      return 'MISSED';
+    if (isWaitingLateWindow()) {
+      return 'WAITING_LATE';
     }
 
-    // 5. Within 30 minutes before cutoff
-    if (currentMinutes >= cutoffMinutes - 30) {
-      return 'WINDING_DOWN';
-    }
-
-    // 6. Default
-    return 'DEFAULT';
+    return summary.fatigueState === 'veryWeak'
+      ? 'VERY_WEAK'
+      : summary.fatigueState === 'weak'
+        ? 'WEAK'
+        : 'ENJOYING_LIFE';
   };
 
   const resolvedMood = resolveKoalaMood();
+  const fatigueScore = summary?.fatigueScore ?? 0;
+  const fatiguePercent = Math.min(100, (fatigueScore / 6) * 100);
+  const fatigueLabel = summary?.fatigueState === 'veryWeak'
+    ? 'Very tired'
+    : summary?.fatigueState === 'weak'
+      ? 'A little tired'
+      : 'Rested';
+  const checkInClosed = summary && !summary.todayCheckedIn && !isInCheckInWindow();
 
   const handleCheckIn = async () => {
     try {
@@ -275,6 +322,55 @@ export const Dashboard: React.FC = () => {
           font-size: 0.85rem;
         }
 
+        .fatigue-card {
+          grid-column: span 2;
+          align-items: stretch;
+          text-align: left;
+        }
+
+        .fatigue-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .fatigue-title {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--text-main);
+          font-family: var(--font-title);
+          font-weight: 700;
+        }
+
+        .fatigue-state {
+          color: var(--text-muted);
+          font-size: 0.85rem;
+          font-weight: 600;
+        }
+
+        .fatigue-track {
+          height: 10px;
+          border-radius: 999px;
+          background-color: rgba(148, 163, 184, 0.2);
+          overflow: hidden;
+          border: 1px solid var(--card-border);
+        }
+
+        .fatigue-fill {
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(90deg, var(--success), var(--warning), var(--error));
+          transition: width var(--transition-normal);
+        }
+
+        .fatigue-note {
+          color: var(--text-muted);
+          font-size: 0.78rem;
+          line-height: 1.4;
+        }
+
         /* Recent Badges shelf */
         .badges-shelf {
           display: flex;
@@ -425,6 +521,20 @@ export const Dashboard: React.FC = () => {
               <span className="stat-value">{summary ? summary.cutoffTime : '--:--'}</span>
               <span className="stat-label">Cutoff Bedtime</span>
             </GlassCard>
+
+            <GlassCard className="stat-card fatigue-card">
+              <div className="fatigue-header">
+                <span className="fatigue-title">
+                  <BatteryMedium size={20} color="var(--primary)" />
+                  Koala Energy
+                </span>
+                <span className="fatigue-state">{fatigueLabel}</span>
+              </div>
+              <div className="fatigue-track" aria-label={`Koala fatigue ${fatigueScore} out of 6`}>
+                <div className="fatigue-fill" style={{ width: `${fatiguePercent}%` }} />
+              </div>
+              <span className="fatigue-note">Late nights add a little fatigue; missed nights add more. On-time nights help the koala recover.</span>
+            </GlassCard>
           </div>
         </div>
 
@@ -459,6 +569,18 @@ export const Dashboard: React.FC = () => {
                         Late Check-in
                       </>
                     )}
+                  </div>
+                </div>
+              ) : checkInClosed ? (
+                <div className="checkin-success-ui">
+                  <AlertTriangle className="check-icon-large" style={{ color: 'var(--warning)' }} />
+                  <h2 className="brand-font" style={{ fontSize: '1.3rem' }}>Missed tonight's check-in</h2>
+                  <p style={{ color: 'var(--text-muted)', maxWidth: '280px', marginBottom: '8px', fontSize: '0.9rem' }}>
+                    Check-in is available from 21:00 to 02:00. Your koala has already drifted off.
+                  </p>
+                  <div className="status-badge late">
+                    <AlertTriangle size={16} />
+                    Missing
                   </div>
                 </div>
               ) : (

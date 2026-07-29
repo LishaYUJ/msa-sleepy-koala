@@ -18,6 +18,38 @@ export const KoalaMascot: React.FC<KoalaMascotProps> = ({ mood = 'default' }) =>
   let speechBubbleText = "Hello!";
 
   switch (currentMood) {
+    case 'enjoying_life':
+      eyeLeft = (
+        <g>
+          <circle cx="165" cy="180" r="10" fill="#1A202C" />
+          <circle cx="162" cy="177" r="3" fill="white" />
+        </g>
+      );
+      eyeRight = (
+        <g>
+          <circle cx="235" cy="180" r="10" fill="#1A202C" />
+          <circle cx="232" cy="177" r="3" fill="white" />
+        </g>
+      );
+      mouth = (
+        <path
+          d="M 185 220 Q 200 238 215 220"
+          fill="none"
+          stroke="#1A202C"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+      );
+      accessory = (
+        <g>
+          <circle cx="270" cy="112" r="4" fill="#FBBF24" className="sparkle-dot sparkle-1" />
+          <circle cx="130" cy="108" r="3" fill="#34D399" className="sparkle-dot sparkle-2" />
+        </g>
+      );
+      animationClass = 'koala-excited';
+      speechBubbleText = "Feeling fresh and enjoying the day.";
+      break;
+
     case 'sleeping':
       // Calm sleeping eyes
       eyeLeft = (
@@ -103,6 +135,48 @@ export const KoalaMascot: React.FC<KoalaMascotProps> = ({ mood = 'default' }) =>
       );
       animationClass = 'koala-breathe';
       speechBubbleText = "Zzz... Slept past bedtime today.";
+      break;
+
+    case 'missed_sleeping':
+      eyeLeft = (
+        <path
+          d="M 155 178 Q 165 186 175 178"
+          fill="none"
+          stroke="#2D3748"
+          strokeWidth="4.5"
+          strokeLinecap="round"
+        />
+      );
+      eyeRight = (
+        <path
+          d="M 225 178 Q 235 186 245 178"
+          fill="none"
+          stroke="#2D3748"
+          strokeWidth="4.5"
+          strokeLinecap="round"
+        />
+      );
+      mouth = (
+        <path
+          d="M 190 224 Q 200 220 210 224"
+          fill="none"
+          stroke="#2D3748"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+      );
+      accessory = (
+        <g>
+          <path
+            d="M 140 150 C 135 155 130 162 135 168 C 140 172 145 170 148 160 Z"
+            fill="#60A5FA"
+            className="koala-sweat"
+          />
+          <text x="260" y="110" fill="#94A3B8" fontSize="18" fontWeight="bold" className="zzz-floating zzz-1">Z</text>
+        </g>
+      );
+      animationClass = 'koala-breathe';
+      speechBubbleText = "Dozed off without checking in.";
       break;
 
     case 'very_weak':
@@ -225,6 +299,7 @@ export const KoalaMascot: React.FC<KoalaMascotProps> = ({ mood = 'default' }) =>
       speechBubbleText = "Your koala stayed up past bedtime.";
       break;
 
+    case 'meditating':
     case 'winding_down':
       // Sleepy drop eyes
       eyeLeft = (
@@ -257,7 +332,46 @@ export const KoalaMascot: React.FC<KoalaMascotProps> = ({ mood = 'default' }) =>
         </g>
       );
       animationClass = 'koala-yawn';
-      speechBubbleText = "Bedtime is approaching. Let's wind down.";
+      speechBubbleText = "Quiet paws. Time to wind down.";
+      break;
+
+    case 'waiting_late':
+      eyeLeft = (
+        <path
+          d="M 155 174 Q 165 186 175 178"
+          fill="none"
+          stroke="#1A202C"
+          strokeWidth="4"
+          strokeLinecap="round"
+        />
+      );
+      eyeRight = (
+        <path
+          d="M 225 174 Q 235 186 245 178"
+          fill="none"
+          stroke="#1A202C"
+          strokeWidth="4"
+          strokeLinecap="round"
+        />
+      );
+      mouth = (
+        <path
+          d="M 188 226 Q 200 220 212 226"
+          fill="none"
+          stroke="#1A202C"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+      );
+      accessory = (
+        <g>
+          <circle cx="270" cy="112" r="18" fill="none" stroke="#F59E0B" strokeWidth="3" />
+          <line x1="270" y1="112" x2="270" y2="102" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" />
+          <line x1="270" y1="112" x2="278" y2="116" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" />
+        </g>
+      );
+      animationClass = 'koala-tired';
+      speechBubbleText = "Past bedtime, but you can still check in.";
       break;
 
     case 'default':
@@ -313,6 +427,13 @@ export const KoalaMascot: React.FC<KoalaMascotProps> = ({ mood = 'default' }) =>
         .koala-dizzy .koala-body-g {
           animation: head-yawn 5s ease-in-out infinite;
         }
+        .sparkle-dot {
+          transform-origin: center;
+          animation: sparkle-pop 2.2s ease-in-out infinite;
+        }
+        .sparkle-2 {
+          animation-delay: 0.8s;
+        }
         .zzz-floating {
           transform-origin: bottom left;
           opacity: 0;
@@ -345,8 +466,12 @@ export const KoalaMascot: React.FC<KoalaMascotProps> = ({ mood = 'default' }) =>
         }
         
         .mood-badge.default { background-color: #818cf8; color: #1e1b4b; }
+        .mood-badge.enjoying_life { background-color: #bbf7d0; color: #14532d; }
         .mood-badge.sleeping { background-color: var(--success); color: #064e3b; }
         .mood-badge.late_sleeping { background-color: #a78bfa; color: #2e1065; }
+        .mood-badge.missed_sleeping { background-color: #cbd5e1; color: #0f172a; }
+        .mood-badge.meditating { background-color: #fef08a; color: #713f12; }
+        .mood-badge.waiting_late { background-color: #fed7aa; color: #7c2d12; }
         .mood-badge.winding_down { background-color: #fef08a; color: #713f12; }
         .mood-badge.missed { background-color: #fca5a5; color: #7f1d1d; }
         .mood-badge.weak { background-color: #fca5a5; color: #7f1d1d; }
@@ -379,6 +504,11 @@ export const KoalaMascot: React.FC<KoalaMascotProps> = ({ mood = 'default' }) =>
           border-color: var(--card-bg) transparent;
           display: block;
           width: 0;
+        }
+
+        @keyframes sparkle-pop {
+          0%, 100% { opacity: 0.35; transform: scale(0.85); }
+          50% { opacity: 1; transform: scale(1.25); }
         }
       `}</style>
 

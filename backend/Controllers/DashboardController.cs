@@ -23,7 +23,7 @@ namespace SleepyKoala.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetSummary([FromQuery] string? localDate)
+        public async Task<IActionResult> GetSummary([FromQuery] string? localDate, [FromQuery] string? localTime)
         {
             var userId = User.GetUserId();
             if (userId == null) return Unauthorized();
@@ -45,6 +45,15 @@ namespace SleepyKoala.Api.Controllers
             {
                 // Fallback: use UTC date when no localDate is provided
                 localDateStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            }
+
+            TimeSpan? localTimeSpan = null;
+            if (!string.IsNullOrEmpty(localTime) &&
+                TimeSpan.TryParse(localTime, out var parsedLocalTime) &&
+                parsedLocalTime >= TimeSpan.Zero &&
+                parsedLocalTime < TimeSpan.FromDays(1))
+            {
+                localTimeSpan = parsedLocalTime;
             }
 
             var todayCheckIn = await _context.CheckIns
@@ -71,11 +80,22 @@ namespace SleepyKoala.Api.Controllers
             }
 
             int consecutiveBadDays = 0;
+            int fatigueScore = 0;
+            string? inferredTodayStatus = todayCheckIn?.Status;
             if (DateOnly.TryParse(localDateStr, out var todayDate))
             {
                 var checkInMap = await _context.CheckIns
                     .Where(c => c.UserId == userId.Value)
                     .ToDictionaryAsync(c => c.LocalCheckInDate, c => c.Status);
+
+                if (todayCheckIn == null &&
+                    localTimeSpan.HasValue &&
+                    localTimeSpan.Value > new TimeSpan(2, 0, 0) &&
+                    localTimeSpan.Value < new TimeSpan(21, 0, 0))
+                {
+                    inferredTodayStatus = "missing";
+                    fatigueScore += 2;
+                }
 
                 var dateToCheck = todayDate.AddDays(-1);
                 var registerDate = DateOnly.FromDateTime(user.CreatedAtUtc);
@@ -94,30 +114,39 @@ namespace SleepyKoala.Api.Controllers
                         {
                             break;
                         }
-                        else
+                        else if (checkStatus == "late")
                         {
                             consecutiveBadDays++;
+                            fatigueScore += 1;
                         }
                     }
                     else
                     {
                         consecutiveBadDays++;
+                        fatigueScore += 2;
                     }
                     dateToCheck = dateToCheck.AddDays(-1);
                 }
             }
 
             var mood = _checkInService.CalculateKoalaMood(user, lastCheckIn?.Status ?? "onTime");
+            var fatigueState = fatigueScore >= 6 ? "veryWeak" : fatigueScore >= 3 ? "weak" : "healthy";
+            if (inferredTodayStatus == "missing")
+            {
+                displayStreak = 0;
+            }
 
             var summary = new DashboardSummaryDto
             {
                 TodayCheckedIn = todayCheckIn != null,
-                TodayStatus = todayCheckIn?.Status,
+                TodayStatus = inferredTodayStatus,
                 CurrentStreak = displayStreak,
                 LongestStreak = user.LongestStreak,
                 KoalaMood = mood,
                 CutoffTime = user.Settings.CutoffTime,
                 ConsecutiveBadDays = consecutiveBadDays,
+                FatigueScore = fatigueScore,
+                FatigueState = fatigueState,
                 Badges = user.UserBadges.Select(ub => new BadgeDto
                 {
                     Name = ub.Badge!.Name,
