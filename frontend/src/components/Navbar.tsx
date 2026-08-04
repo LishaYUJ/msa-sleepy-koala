@@ -1,31 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Clock, Trophy, Star, Settings, LogOut, ChevronUp, ChevronDown, X, Trash2, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Home, Clock, Trophy, Star, Settings, LogOut, ChevronUp, ChevronDown } from 'lucide-react';
 import { useStore } from '../stores/useStore';
 
 import sidebarLogo from '../assets/sidebar_logo.png';
 import userAvatar from '../assets/user_avatar.png';
 
 export const Navbar: React.FC = () => {
-  const { nickname, logout, history, loadHistory, deleteHistoryItem } = useStore();
+  const { nickname, logout } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
-  };
-
-  const openHistory = () => {
-    loadHistory();
-    setHistoryModalOpen(true);
-  };
-
-  const closeHistory = () => {
-    setHistoryModalOpen(false);
   };
 
   // Close menus when location changes
@@ -299,96 +289,6 @@ export const Navbar: React.FC = () => {
             }
           }
 
-          /* Check-in History Modal */
-          .history-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(4, 6, 16, 0.75);
-            backdrop-filter: blur(8px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-          }
-
-          .history-modal-content {
-            background: #0f152d;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 24px;
-            width: 100%;
-            max-width: 540px;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
-            overflow: hidden;
-          }
-
-          .history-modal-header {
-            padding: 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-          }
-
-          .history-modal-title {
-            font-family: var(--font-serif);
-            font-size: 1.3rem;
-            color: #f3edd7;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-          }
-
-          .history-modal-body {
-            padding: 20px 24px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-          }
-
-          .history-row-card {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
-            padding: 14px 18px;
-          }
-
-          .history-date-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #f3edd7;
-            font-weight: 500;
-            font-size: 0.95rem;
-          }
-
-          .history-status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 8px;
-            text-transform: uppercase;
-          }
-
-          .history-status-badge.onTime {
-            background: rgba(78, 168, 129, 0.15);
-            color: #4ea881;
-          }
-
-          .history-status-badge.late {
-            background: rgba(251, 191, 36, 0.15);
-            color: #fbbf24;
-          }
         `}</style>
 
         {/* Top Brand Header */}
@@ -404,10 +304,10 @@ export const Navbar: React.FC = () => {
             <span>Dashboard</span>
           </NavLink>
 
-          <button onClick={openHistory} className="sidebar-item">
+          <NavLink to="/history" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
             <Clock className="sidebar-icon" />
             <span>Check-in History</span>
-          </button>
+          </NavLink>
 
           <NavLink to="/leaderboard" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
             <Trophy className="sidebar-icon" />
@@ -461,62 +361,6 @@ export const Navbar: React.FC = () => {
         </div>
       </nav>
 
-      {/* Check-in History Modal */}
-      {historyModalOpen && (
-        <div className="history-modal-overlay" onClick={closeHistory}>
-          <div className="history-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="history-modal-header">
-              <div className="history-modal-title">
-                <Clock size={22} color="#818cf8" />
-                <span>Check-in History</span>
-              </div>
-              <button
-                onClick={closeHistory}
-                style={{ background: 'none', border: 'none', color: '#8e9bb4', cursor: 'pointer' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="history-modal-body">
-              {history && history.length > 0 ? (
-                history.map((item) => (
-                  <div className="history-row-card" key={item.id}>
-                    <div className="history-date-info">
-                      <Calendar size={18} color="#818cf8" />
-                      <span>{item.localCheckInDate}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span className={`history-status-badge ${item.status === 'onTime' ? 'onTime' : 'late'}`}>
-                        {item.status === 'onTime' ? (
-                          <>
-                            <CheckCircle2 size={14} /> On Time
-                          </>
-                        ) : (
-                          <>
-                            <AlertCircle size={14} /> Late
-                          </>
-                        )}
-                      </span>
-                      <button
-                        onClick={() => deleteHistoryItem(item.id)}
-                        style={{ background: 'none', border: 'none', color: '#8e9bb4', cursor: 'pointer', padding: '4px' }}
-                        title="Delete check-in"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ textAlign: 'center', padding: '32px 0', color: '#8e9bb4' }}>
-                  No check-in history records found yet.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

@@ -7,6 +7,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Leaderboard } from './pages/Leaderboard';
 import { Badges } from './pages/Badges';
 import { Settings } from './pages/Settings';
+import { History } from './pages/History';
 
 const StarrySky: React.FC = () => {
   return (
@@ -68,6 +69,15 @@ const App: React.FC = () => {
         />
         
         {/* Protected Leaderboard Route */}
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <History />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/leaderboard"
           element={

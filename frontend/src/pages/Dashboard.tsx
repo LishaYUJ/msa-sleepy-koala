@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore, getCurrentSleepDateString } from '../stores/useStore';
-import { Sparkles, Calendar, ChevronDown, Moon, CheckCircle, AlertTriangle, X, Award, Flame, Trophy, User } from 'lucide-react';
+import { Sparkles, Calendar, ChevronDown, Moon, CheckCircle, X, Award, Flame } from 'lucide-react';
 
 import heroKoalaScene from '../assets/hero_koala_scene.png';
 import eucalyptusBranch from '../assets/eucalyptus_branch.png';
