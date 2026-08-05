@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Trophy, Star, Settings, LogOut, ChevronDown, Sparkles } from 'lucide-react';
+import { Home, Trophy, Star, Settings, LogOut, ChevronDown, Sparkles, Clock } from 'lucide-react';
 import { useStore } from '../stores/useStore';
 
 import userAvatar from '../assets/user_avatar.png';
@@ -209,6 +209,11 @@ export const Navbar: React.FC = () => {
           <span>Sanctuary</span>
         </NavLink>
         
+        <NavLink to="/history" className={({ isActive }) => `nav-item-link ${isActive ? 'active' : ''}`}>
+          <Clock className="nav-icon" />
+          <span>History</span>
+        </NavLink>
+
         <NavLink to="/leaderboard" className={({ isActive }) => `nav-item-link ${isActive ? 'active' : ''}`}>
           <Trophy className="nav-icon" />
           <span>Leaderboard</span>

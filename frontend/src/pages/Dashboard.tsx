@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStore, getCurrentSleepDateString } from '../stores/useStore';
+import { useStore, getCurrentSleepDateString, getLocalDateString } from '../stores/useStore';
 import { Sparkles, Moon, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, ChevronLeft } from 'lucide-react';
 import { formatRemainingTime, resolveBedtimeCardState } from '../utils/bedtimeCard';
 
@@ -8,7 +8,7 @@ import isolatedKoalaPet from '../assets/isolated_koala_pet.png';
 
 
 export const Dashboard: React.FC = () => {
-  const { summary, loadSummary, performCheckIn, isLoading, error } = useStore();
+  const { summary, loadSummary, performCheckIn, isLoading, error, history, loadHistory } = useStore();
   const navigate = useNavigate();
 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -24,7 +24,8 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     const sleepDate = getCurrentSleepDateString();
     loadSummary(sleepDate);
-  }, [loadSummary]);
+    loadHistory();
+  }, [loadSummary, loadHistory]);
 
   // Update current time periodically
   useEffect(() => {
@@ -109,16 +110,27 @@ export const Dashboard: React.FC = () => {
     setJustCheckedInMsg(null);
   };
 
-  // Mock days of current week for bottom tracker
-  const weekDays = [
-    { label: 'Mon', checked: true },
-    { label: 'Tue', checked: true },
-    { label: 'Wed', checked: true },
-    { label: 'Thu', checked: true },
-    { label: 'Fri', checked: summary?.todayCheckedIn ?? true },
-    { label: 'Sat', checked: false },
-    { label: 'Sun', checked: false }
-  ];
+  // Resolve real days of the current week for bottom tracker
+  const today = new Date();
+  const currentDayOfWeek = today.getDay() || 7; // Sunday = 0, map to 7 for mon-sun format
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - currentDayOfWeek + 1);
+
+  const weekDays = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dStr = getLocalDateString(d);
+    
+    // The visual tracker should check the user's "sleep date", not calendar date
+    const sleepDate = getCurrentSleepDateString();
+    const isCurrentSleepDate = sleepDate === dStr;
+    const hasHistory = history.some((h: any) => h.localCheckInDate === dStr && h.status !== 'missed');
+    
+    return {
+      label: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      checked: isCurrentSleepDate ? !!summary?.todayCheckedIn : hasHistory
+    };
+  });
 
   return (
     <div className="dashboard-viewport">
@@ -504,9 +516,9 @@ export const Dashboard: React.FC = () => {
         .week-days-timeline::before {
           content: '';
           position: absolute;
-          top: 38px;
-          left: 15px;
-          right: 15px;
+          top: 42px; /* Centers the dashed line directly in the middle of circles */
+          left: 20px;
+          right: 20px;
           height: 2px;
           border-top: 2px dashed rgba(255,255,255,0.15);
           z-index: 1;
@@ -785,17 +797,31 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Badges Card */}
-                <div className="dark-glass-card" style={{ flex: 1 }}>
+                <div className="dark-glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <div className="card-header-small">
                     <span>Badges earned</span>
                     <Award size={16} color="#f472b6" />
                   </div>
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <div className="badge-shield-icon" title="Night Owl"><Moon size={20} /></div>
-                    <div className="badge-shield-icon" title="Early Koala"><Award size={20} /></div>
-                    <div className="badge-shield-icon" title="Streak Star"><Flame size={20} /></div>
+                    {summary && summary.badges.length > 0 ? (
+                      summary.badges.slice(0, 3).map((b, i) => (
+                        <div key={i} className="badge-shield-icon" title={b.name}><Award size={20} /></div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="badge-shield-icon" style={{ opacity: 0.3 }} title="Night Owl (Locked)"><Moon size={20} /></div>
+                        <div className="badge-shield-icon" style={{ opacity: 0.3 }} title="Early Koala (Locked)"><Award size={20} /></div>
+                        <div className="badge-shield-icon" style={{ opacity: 0.3 }} title="Streak Star (Locked)"><Flame size={20} /></div>
+                      </>
+                    )}
                   </div>
-                  <div className="badge-total-text">{summary ? summary.badges.length : 5} total</div>
+                  <div className="badge-total-text" style={{ flex: 1 }}>{summary ? summary.badges.length : 0} total</div>
+                  
+                  {summary && summary.badges.length > 0 && (
+                    <div style={{ marginTop: '14px' }}>
+                      <span className="view-leaderboard-link" onClick={() => navigate('/badges')}>View badges →</span>
+                    </div>
+                  )}
                 </div>
               </div>
               
