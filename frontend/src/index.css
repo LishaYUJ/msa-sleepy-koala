@@ -137,28 +137,30 @@ a:hover {
 
 @media (min-width: 768px) {
   .app-shell {
-    flex-direction: row;
+    flex-direction: column;
   }
 }
 
 /* Layout Main Content Wrapper */
 .main-wrapper {
   flex: 1;
-  padding: 24px 16px 90px 16px; /* Space for mobile bottom bar */
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 80px 16px 24px 16px; /* Space for top navbar */
+  max-width: 100%;
+  margin: 0;
   width: 100%;
   z-index: 5;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
 }
 
 @media (min-width: 768px) {
   .main-wrapper {
-    padding: 16px 36px 16px 36px;
-    margin-left: 260px; /* Sidebar offset */
-    width: calc(100% - 260px);
-    max-width: 1500px;
+    padding: 80px 0 0 0; /* Minimal padding to let slider take full width */
+    margin-left: 0; 
+    width: 100%;
+    max-width: 100%;
   }
 }
 
