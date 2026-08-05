@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Trophy, Star, Settings, LogOut, ChevronDown, Sparkles, Clock } from 'lucide-react';
+import { Home, Trophy, Star, Settings, LogOut, ChevronDown, Clock } from 'lucide-react';
 import { useStore } from '../stores/useStore';
 
 import userAvatar from '../assets/user_avatar.png';
+import sidebarLogo from '../assets/sidebar_logo.png';
 
 export const Navbar: React.FC = () => {
   const { nickname, logout } = useStore();
@@ -198,7 +199,7 @@ export const Navbar: React.FC = () => {
       
       {/* Left: Brand */}
       <NavLink to="/" className="brand-section">
-        <Sparkles size={22} color="#818cf8" />
+        <img src={sidebarLogo} alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain' }} />
         <span className="brand-title">Sleepy Koala</span>
       </NavLink>
       

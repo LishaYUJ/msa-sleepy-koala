@@ -258,12 +258,82 @@ export const Dashboard: React.FC = () => {
           justify-content: center;
           cursor: pointer;
           z-index: 100;
-          transition: all 0.2s ease;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+          transition:
+            transform 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+            background 0.72s ease,
+            border-color 0.72s ease,
+            color 0.72s ease,
+            box-shadow 0.72s ease;
+          isolation: isolate;
         }
 
-        .nav-arrow-btn:hover {
-          background: rgba(255, 255, 255, 0.15);
-          transform: translateY(-50%) scale(1.05);
+        .nav-arrow-btn::before {
+          content: '';
+          position: absolute;
+          inset: -8px;
+          z-index: -1;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(243, 237, 215, 0.32) 0%, rgba(243, 237, 215, 0) 72%);
+          opacity: 0;
+          transform: scale(0.78);
+          transition: opacity 0.72s ease, transform 0.72s ease;
+          pointer-events: none;
+        }
+
+        .nav-arrow-btn:hover,
+        .nav-arrow-btn:focus-visible {
+          background: rgba(255, 255, 255, 0.17);
+          border-color: rgba(243, 237, 215, 0.46);
+          color: #fffdf3;
+          transform: translateY(calc(-50% - 4px)) scale(1.045);
+          box-shadow:
+            0 16px 30px rgba(0, 0, 0, 0.3),
+            0 0 24px rgba(243, 237, 215, 0.34),
+            inset 0 0 14px rgba(255, 255, 255, 0.12);
+          outline: none;
+        }
+
+        .nav-arrow-btn:hover::before,
+        .nav-arrow-btn:focus-visible::before {
+          opacity: 0.82;
+          transform: scale(1.08);
+          animation: nav-arrow-breathe 2.8s ease-in-out infinite;
+        }
+
+        @keyframes nav-arrow-breathe {
+          0%, 100% {
+            opacity: 0.58;
+            transform: scale(1.02);
+          }
+          50% {
+            opacity: 0.9;
+            transform: scale(1.12);
+          }
+        }
+
+        .nav-arrow-btn:active {
+          transform: translateY(-50%) scale(0.98);
+        }
+
+        .nav-arrow-icon {
+          filter: brightness(1);
+          transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1), filter 0.72s ease;
+        }
+
+        .nav-arrow-btn:hover .nav-arrow-icon,
+        .nav-arrow-btn:focus-visible .nav-arrow-icon {
+          filter: brightness(1.28) drop-shadow(0 0 7px rgba(243, 237, 215, 0.82));
+        }
+
+        .nav-arrow-btn.right-edge:hover .nav-arrow-icon,
+        .nav-arrow-btn.right-edge:focus-visible .nav-arrow-icon {
+          transform: translateX(1px) scale(1.04);
+        }
+
+        .nav-arrow-btn.left-edge:hover .nav-arrow-icon,
+        .nav-arrow-btn.left-edge:focus-visible .nav-arrow-icon {
+          transform: translateX(-1px) scale(1.04);
         }
         .nav-arrow-btn.right-edge {
           right: 30px;
@@ -279,15 +349,32 @@ export const Dashboard: React.FC = () => {
           white-space: nowrap;
           pointer-events: none;
           opacity: 0;
-          transition: opacity 0.2s ease, transform 0.2s ease;
+          color: #f3edd7;
+          text-shadow: 0 0 10px rgba(243, 237, 215, 0.28);
+          transition: opacity 0.72s ease, transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        .right-edge:hover .arrow-text-label {
+        .right-edge:hover .arrow-text-label,
+        .right-edge:focus-visible .arrow-text-label {
           opacity: 1;
           transform: translateX(-60px);
         }
-        .left-edge:hover .arrow-text-label {
+        .left-edge:hover .arrow-text-label,
+        .left-edge:focus-visible .arrow-text-label {
           opacity: 1;
           transform: translateX(60px);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .nav-arrow-btn,
+          .nav-arrow-btn::before,
+          .nav-arrow-icon,
+          .arrow-text-label {
+            transition-duration: 0.01ms;
+          }
+
+          .nav-arrow-btn::before {
+            animation: none !important;
+          }
         }
 
         /* -------------------------------------
@@ -639,16 +726,26 @@ export const Dashboard: React.FC = () => {
 
       {/* Floating Transition Controls */}
       {currentView === 'pet' && (
-        <div className="nav-arrow-btn right-edge" onClick={() => setCurrentView('progress')}>
-          <ChevronRight size={28} />
+        <button
+          type="button"
+          className="nav-arrow-btn right-edge"
+          onClick={() => setCurrentView('progress')}
+          aria-label="Open My Progress"
+        >
+          <ChevronRight className="nav-arrow-icon" size={28} />
           <span className="arrow-text-label">My Progress</span>
-        </div>
+        </button>
       )}
       {currentView === 'progress' && (
-        <div className="nav-arrow-btn left-edge" onClick={() => setCurrentView('pet')}>
-          <ChevronLeft size={28} />
+        <button
+          type="button"
+          className="nav-arrow-btn left-edge"
+          onClick={() => setCurrentView('pet')}
+          aria-label="Return to Sanctuary"
+        >
+          <ChevronLeft className="nav-arrow-icon" size={28} />
           <span className="arrow-text-label">Koala</span>
-        </div>
+        </button>
       )}
 
       {/* SLIDER STRUCTURE */}
