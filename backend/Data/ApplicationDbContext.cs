@@ -20,7 +20,31 @@ namespace SleepyKoala.Api.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure User email to be unique
+            modelBuilder.Entity<User>(user =>
+            {
+                user.Property(u => u.Email).HasMaxLength(320);
+                user.Property(u => u.PasswordHash).HasMaxLength(100);
+                user.Property(u => u.Nickname).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<Badge>(badge =>
+            {
+                badge.Property(b => b.Name).HasMaxLength(100);
+                badge.Property(b => b.Description).HasMaxLength(500);
+            });
+
+            modelBuilder.Entity<CheckIn>(checkIn =>
+            {
+                checkIn.Property(c => c.LocalCheckInDate).HasMaxLength(10);
+                checkIn.Property(c => c.Status).HasMaxLength(16);
+            });
+
+            modelBuilder.Entity<UserSettings>(settings =>
+            {
+                settings.Property(s => s.CutoffTime).HasMaxLength(5);
+                settings.Property(s => s.ThemePreference).HasMaxLength(16);
+            });
+
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();

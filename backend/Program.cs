@@ -7,13 +7,33 @@ using SleepyKoala.Api.Services;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
-var jwtSettings = JwtSettings.FromConfiguration(builder.Configuration);
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+var databaseProvider = builder.Configuration["Database:Provider"] ?? "Sqlite";
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
 
 // Add services to the container.
 
 // 1. Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (databaseProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlServer(connectionString);
+        return;
+    }
+
+    if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlite(connectionString);
+        return;
+    }
+
+    throw new InvalidOperationException(
+        $"Unsupported database provider '{databaseProvider}'. Use 'Sqlite' or 'SqlServer'.");
+});
 
 // 2. Authentication (JWT)
 builder.Services.AddAuthentication(options =>
@@ -23,6 +43,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    var jwtSettings = JwtSettings.FromConfiguration(builder.Configuration);
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -37,13 +58,30 @@ builder.Services.AddAuthentication(options =>
 });
 
 // 3. Application Services
-builder.Services.AddSingleton(jwtSettings);
+builder.Services.AddSingleton(_ => JwtSettings.FromConfiguration(builder.Configuration));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICheckInService, CheckInService>();
 
 // 4. Controllers & Features
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddHealthChecks();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        if (allowedOrigins.Length == 0)
+        {
+            throw new InvalidOperationException(
+                "No CORS origins are configured. Set Cors:AllowedOrigins.");
+        }
+
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
@@ -57,15 +95,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors(policy => policy
-    .AllowAnyOrigin()
-    .AllowAnyMethod()
-    .AllowAnyHeader());
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
 

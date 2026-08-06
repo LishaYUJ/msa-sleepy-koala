@@ -5,19 +5,19 @@ namespace SleepyKoala.Api.DTOs
 {
     public class RegisterRequest
     {
-        [Required, EmailAddress]
+        [Required, EmailAddress, StringLength(320)]
         public required string Email { get; set; }
         
         [Required, MinLength(6)]
         public required string Password { get; set; }
         
-        [Required]
+        [Required, StringLength(50)]
         public required string Nickname { get; set; }
     }
 
     public class LoginRequest
     {
-        [Required, EmailAddress]
+        [Required, EmailAddress, StringLength(320)]
         public required string Email { get; set; }
         
         [Required]

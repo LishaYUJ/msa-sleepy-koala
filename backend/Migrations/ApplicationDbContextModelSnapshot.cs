@@ -25,10 +25,12 @@ namespace SleepyKoala.Api.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("RequiredStreak")
@@ -73,10 +75,12 @@ namespace SleepyKoala.Api.Migrations
 
                     b.Property<string>("LocalCheckInDate")
                         .IsRequired()
+                        .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("UserId")
@@ -104,6 +108,7 @@ namespace SleepyKoala.Api.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
+                        .HasMaxLength(320)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("LongestStreak")
@@ -111,10 +116,12 @@ namespace SleepyKoala.Api.Migrations
 
                     b.Property<string>("Nickname")
                         .IsRequired()
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -156,10 +163,12 @@ namespace SleepyKoala.Api.Migrations
 
                     b.Property<string>("CutoffTime")
                         .IsRequired()
+                        .HasMaxLength(5)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ThemePreference")
                         .IsRequired()
+                        .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
                     b.HasKey("UserId");

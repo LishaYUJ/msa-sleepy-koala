@@ -70,6 +70,31 @@ namespace SleepyKoala.Tests
         }
 
         [Fact]
+        public async Task HealthEndpoint_IsAvailableWithoutAuthentication()
+        {
+            var client = _factory.CreateClient();
+
+            var response = await client.GetAsync("/health");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CorsPreflight_AllowsProductionFrontend()
+        {
+            const string origin = "https://msa-sleepy-koala.vercel.app";
+            var client = _factory.CreateClient();
+            var request = new HttpRequestMessage(HttpMethod.Options, "/api/auth/login");
+            request.Headers.Add("Origin", origin);
+            request.Headers.Add("Access-Control-Request-Method", "POST");
+
+            var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+            Assert.Equal(origin, response.Headers.GetValues("Access-Control-Allow-Origin").Single());
+        }
+
+        [Fact]
         public async Task AuthToken_FromLogin_IsAcceptedBySettingsMe()
         {
             var client = _factory.CreateClient();

@@ -15,6 +15,17 @@ export class CustomApiError extends Error {
   }
 }
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
+
+function resolveApiUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  const path = url.startsWith('/') ? url : `/${url}`;
+  return `${apiBaseUrl}${path}`;
+}
+
 async function request<T>(
   url: string,
   options: RequestInit = {},
@@ -26,7 +37,7 @@ async function request<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(url, {
+  const response = await fetch(resolveApiUrl(url), {
     ...options,
     headers,
   });

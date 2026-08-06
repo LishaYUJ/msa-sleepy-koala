@@ -18,10 +18,15 @@ namespace SleepyKoala.Api.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            var timezoneType = ActiveProvider == "Microsoft.EntityFrameworkCore.SqlServer"
+                ? "nvarchar(100)"
+                : "TEXT";
+
             migrationBuilder.AddColumn<string>(
                 name: "Timezone",
                 table: "UserSettings",
-                type: "TEXT",
+                type: timezoneType,
+                maxLength: 100,
                 nullable: false,
                 defaultValue: "");
         }

@@ -4,7 +4,7 @@ namespace SleepyKoala.Api.DTOs
 {
     public class SettingsDto
     {
-        [Required]
+        [Required, StringLength(50)]
         public required string Nickname { get; set; }
         
         [Required]

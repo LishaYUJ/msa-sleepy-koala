@@ -13,14 +13,28 @@ namespace SleepyKoala.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            var isSqlServer = ActiveProvider == "Microsoft.EntityFrameworkCore.SqlServer";
+            var guidType = isSqlServer ? "uniqueidentifier" : "TEXT";
+            var dateTimeType = isSqlServer ? "datetime2" : "TEXT";
+            var intType = isSqlServer ? "int" : "INTEGER";
+            var nameType = isSqlServer ? "nvarchar(100)" : "TEXT";
+            var descriptionType = isSqlServer ? "nvarchar(500)" : "TEXT";
+            var emailType = isSqlServer ? "nvarchar(320)" : "TEXT";
+            var passwordHashType = isSqlServer ? "nvarchar(100)" : "TEXT";
+            var nicknameType = isSqlServer ? "nvarchar(50)" : "TEXT";
+            var shortTextType = isSqlServer ? "nvarchar(16)" : "TEXT";
+            var dateTextType = isSqlServer ? "nvarchar(10)" : "TEXT";
+            var timeTextType = isSqlServer ? "nvarchar(5)" : "TEXT";
+            var timezoneType = isSqlServer ? "nvarchar(100)" : "TEXT";
+
             migrationBuilder.CreateTable(
                 name: "Badges",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: false),
-                    RequiredStreak = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(type: guidType, nullable: false),
+                    Name = table.Column<string>(type: nameType, maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: descriptionType, maxLength: 500, nullable: false),
+                    RequiredStreak = table.Column<int>(type: intType, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,13 +45,13 @@ namespace SleepyKoala.Api.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Email = table.Column<string>(type: "TEXT", nullable: false),
-                    PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
-                    Nickname = table.Column<string>(type: "TEXT", nullable: false),
-                    CurrentStreak = table.Column<int>(type: "INTEGER", nullable: false),
-                    LongestStreak = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: guidType, nullable: false),
+                    Email = table.Column<string>(type: emailType, maxLength: 320, nullable: false),
+                    PasswordHash = table.Column<string>(type: passwordHashType, maxLength: 100, nullable: false),
+                    Nickname = table.Column<string>(type: nicknameType, maxLength: 50, nullable: false),
+                    CurrentStreak = table.Column<int>(type: intType, nullable: false),
+                    LongestStreak = table.Column<int>(type: intType, nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: dateTimeType, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -48,11 +62,11 @@ namespace SleepyKoala.Api.Migrations
                 name: "CheckIns",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    LocalCheckInDate = table.Column<string>(type: "TEXT", nullable: false),
-                    Status = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: guidType, nullable: false),
+                    UserId = table.Column<Guid>(type: guidType, nullable: false),
+                    LocalCheckInDate = table.Column<string>(type: dateTextType, maxLength: 10, nullable: false),
+                    Status = table.Column<string>(type: shortTextType, maxLength: 16, nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: dateTimeType, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -69,10 +83,10 @@ namespace SleepyKoala.Api.Migrations
                 name: "UserBadges",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    BadgeId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    UnlockedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: guidType, nullable: false),
+                    UserId = table.Column<Guid>(type: guidType, nullable: false),
+                    BadgeId = table.Column<Guid>(type: guidType, nullable: false),
+                    UnlockedAtUtc = table.Column<DateTime>(type: dateTimeType, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -95,10 +109,10 @@ namespace SleepyKoala.Api.Migrations
                 name: "UserSettings",
                 columns: table => new
                 {
-                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    CutoffTime = table.Column<string>(type: "TEXT", nullable: false),
-                    Timezone = table.Column<string>(type: "TEXT", nullable: false),
-                    ThemePreference = table.Column<string>(type: "TEXT", nullable: false)
+                    UserId = table.Column<Guid>(type: guidType, nullable: false),
+                    CutoffTime = table.Column<string>(type: timeTextType, maxLength: 5, nullable: false),
+                    Timezone = table.Column<string>(type: timezoneType, maxLength: 100, nullable: false),
+                    ThemePreference = table.Column<string>(type: shortTextType, maxLength: 16, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -114,6 +128,7 @@ namespace SleepyKoala.Api.Migrations
             migrationBuilder.InsertData(
                 table: "Badges",
                 columns: new[] { "Id", "Description", "Name", "RequiredStreak" },
+                columnTypes: new[] { guidType, descriptionType, nameType, intType },
                 values: new object[,]
                 {
                     { new Guid("11111111-1111-1111-1111-111111111111"), "Completed your first on-time bedtime check-in", "First Sleep", 1 },
