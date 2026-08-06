@@ -9,6 +9,7 @@ namespace SleepyKoala.Api.Models
         public required string Email { get; set; }
         public required string PasswordHash { get; set; }
         public required string Nickname { get; set; }
+        public string? AvatarDataUrl { get; set; }
         
         public int CurrentStreak { get; set; } = 0;
         public int LongestStreak { get; set; } = 0;

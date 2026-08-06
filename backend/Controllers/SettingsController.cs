@@ -12,6 +12,14 @@ namespace SleepyKoala.Api.Controllers
     [Route("api/settings/me")]
     public class SettingsController : ControllerBase
     {
+        private const int MaxAvatarBytes = 512 * 1024;
+        private static readonly HashSet<string> AllowedAvatarMimeTypes =
+        [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
         private readonly ApplicationDbContext _context;
 
         public SettingsController(ApplicationDbContext context)
@@ -35,7 +43,8 @@ namespace SleepyKoala.Api.Controllers
             {
                 Nickname = user.Nickname,
                 CutoffTime = user.Settings.CutoffTime,
-                ThemePreference = user.Settings.ThemePreference
+                ThemePreference = user.Settings.ThemePreference,
+                AvatarDataUrl = user.AvatarDataUrl
             });
         }
 
@@ -62,13 +71,91 @@ namespace SleepyKoala.Api.Controllers
 
             if (user == null || user.Settings == null) return NotFound();
 
-            user.Nickname = dto.Nickname;
+            if (dto.AvatarDataUrl != null && !TryValidateAvatar(dto.AvatarDataUrl, out var avatarError))
+            {
+                return BadRequest(new { error = "InvalidAvatar", message = avatarError });
+            }
+
+            user.Nickname = dto.Nickname.Trim();
             user.Settings.CutoffTime = dto.CutoffTime;
             user.Settings.ThemePreference = dto.ThemePreference;
+            if (dto.AvatarDataUrl != null)
+            {
+                user.AvatarDataUrl = string.IsNullOrWhiteSpace(dto.AvatarDataUrl)
+                    ? null
+                    : dto.AvatarDataUrl;
+            }
 
             await _context.SaveChangesAsync();
 
-            return Ok(dto);
+            return Ok(new SettingsDto
+            {
+                Nickname = user.Nickname,
+                CutoffTime = user.Settings.CutoffTime,
+                ThemePreference = user.Settings.ThemePreference,
+                AvatarDataUrl = user.AvatarDataUrl
+            });
+        }
+
+        private static bool TryValidateAvatar(string avatarDataUrl, out string error)
+        {
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(avatarDataUrl)) return true;
+
+            var separatorIndex = avatarDataUrl.IndexOf(',');
+            if (separatorIndex <= 5 || !avatarDataUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                error = "Avatar must be a valid image data URL.";
+                return false;
+            }
+
+            var metadataParts = avatarDataUrl[5..separatorIndex]
+                .Split(';', StringSplitOptions.RemoveEmptyEntries);
+            if (metadataParts.Length != 2 ||
+                !AllowedAvatarMimeTypes.Contains(metadataParts[0].ToLowerInvariant()) ||
+                !metadataParts[1].Equals("base64", StringComparison.OrdinalIgnoreCase))
+            {
+                error = "Avatar must be a JPEG, PNG, or WebP image.";
+                return false;
+            }
+
+            try
+            {
+                var bytes = Convert.FromBase64String(avatarDataUrl[(separatorIndex + 1)..]);
+                if (bytes.Length > MaxAvatarBytes)
+                {
+                    error = "Avatar must be smaller than 512 KB after processing.";
+                    return false;
+                }
+
+                if (!HasExpectedImageSignature(metadataParts[0], bytes))
+                {
+                    error = "Avatar image contents do not match its declared file type.";
+                    return false;
+                }
+            }
+            catch (FormatException)
+            {
+                error = "Avatar image data is invalid.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool HasExpectedImageSignature(string mimeType, byte[] bytes)
+        {
+            return mimeType switch
+            {
+                "image/jpeg" => bytes.Length >= 3 &&
+                    bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF,
+                "image/png" => bytes.Length >= 8 &&
+                    bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }),
+                "image/webp" => bytes.Length >= 12 &&
+                    bytes.AsSpan(0, 4).SequenceEqual("RIFF"u8) &&
+                    bytes.AsSpan(8, 4).SequenceEqual("WEBP"u8),
+                _ => false
+            };
         }
     }
 }

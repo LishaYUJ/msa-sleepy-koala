@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore, getCurrentSleepDateString, getLocalDateString } from '../stores/useStore';
-import { Sparkles, Moon, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Sparkles, Moon, Check, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, ChevronLeft } from 'lucide-react';
 import {
   formatRemainingTime,
   resolveBedtimeCardState,
@@ -15,13 +15,13 @@ import {
 import isolatedKoalaPet from '../assets/isolated_koala_pet.png';
 import koalaAwakeInBed from '../assets/koala_awake_in_bed.png';
 import koalaEnjoyingLife from '../assets/koala_enjoying_life.png';
-import koalaSleepingInBed from '../assets/koala_sleeping_in_bed.png';
+import koalaSleepingInBed from '../assets/koala_sleeping_in_bed_soft_edge.png';
 import koalaVeryWeakEating from '../assets/koala_very_weak_eating.png';
 import koalaWeakEating from '../assets/koala_weak_eating.png';
-
+import nighttimeRoomBg from '../assets/nighttime_room_bg.png';
 
 export const Dashboard: React.FC = () => {
-  const { summary, loadSummary, performCheckIn, isLoading, error, history, loadHistory } = useStore();
+  const { summary, loadSummary, performCheckIn, isLoading, error, history, loadHistory, nickname } = useStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -33,6 +33,8 @@ export const Dashboard: React.FC = () => {
     newStreak: number;
     unlockedBadges: string[];
   } | null>(null);
+
+  const [slideVal, setSlideVal] = useState(0);
 
   // Sync state on load
   useEffect(() => {
@@ -106,6 +108,9 @@ export const Dashboard: React.FC = () => {
     summary?.todayCheckedIn ?? false,
   ));
   const isInBedAnimation = showAwakeInBedAnimation || showSleepingInBedAnimation;
+  const showRecordedCheckIn = previewSleepingInBed || (summary?.todayCheckedIn ?? false);
+  // Keep every non-bed koala state visually consistent: normal, happy, weak, and very weak.
+  const useCompactKoalaStage = !isInBedAnimation;
   const koalaImage = showSleepingInBedAnimation
     ? koalaSleepingInBed
     : showAwakeInBedAnimation
@@ -217,6 +222,10 @@ export const Dashboard: React.FC = () => {
           overflow: hidden; /* Hide the slider track */
           padding-top: 80px; /* Accounts for top transparent navbar */
           box-sizing: border-box;
+          background-image: url(${nighttimeRoomBg});
+          background-size: cover;
+          background-position: center center;
+          background-repeat: no-repeat;
         }
 
         .dashboard-slider-track {
@@ -244,20 +253,147 @@ export const Dashboard: React.FC = () => {
           align-items: center;
           justify-content: center;
           height: 100%;
-          padding-bottom: 10vh; /* Lift slightly off absolute center */
+          padding: 0 0 4px;
+          box-sizing: border-box;
+        }
+
+        .greeting-text {
+          flex: none;
+        }
+
+        .pet-sprite-stage {
+          width: 680px;
+          max-width: 95vw;
+          flex: none;
+          margin-bottom: 24px;
+        }
+
+        .pet-sprite-stage.in-bed {
+          position: relative;
+          height: min(395px, 58vw);
+          margin-bottom: 8px;
+        }
+
+        .pet-sprite-stage.compact-koala {
+          width: 340px;
+          max-width: 68vw;
         }
 
         .pet-sprite-image {
-          width: 320px;
+          display: block;
+          width: 100%;
           height: auto;
           object-fit: contain;
           filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.4));
           animation: float-pet 6s ease-in-out infinite;
-          margin-bottom: 24px;
         }
 
         .pet-sprite-image.in-bed {
+          position: absolute;
+          top: 0;
+          left: 0;
+          transform: translateY(-12%);
           animation: none;
+        }
+
+        .checked-sleep-state {
+          position: relative;
+          z-index: 4;
+          display: flex;
+          width: 430px;
+          max-width: 90vw;
+          margin-top: -36px;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .checked-sleep-control {
+          display: grid;
+          width: 100%;
+          height: 76px;
+          grid-template-columns: 62px minmax(0, 1fr) 64px;
+          align-items: center;
+          box-sizing: border-box;
+          padding: 6px 8px 6px 12px;
+          border: 1.5px solid rgba(196, 181, 253, 0.58);
+          border-radius: 999px;
+          background: rgba(42, 37, 72, 0.82);
+          box-shadow: 0 18px 42px rgba(10, 8, 28, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(12px);
+        }
+
+        .checked-sleep-moon {
+          display: grid;
+          width: 48px;
+          height: 48px;
+          place-items: center;
+          border-radius: 50%;
+          color: #c4b5fd;
+          background: rgba(124, 102, 178, 0.3);
+        }
+
+        .checked-sleep-copy {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 1px;
+        }
+
+        .checked-sleep-dots {
+          width: 100%;
+          overflow: hidden;
+          color: #9ee3c4;
+          font-size: 0.86rem;
+          letter-spacing: 5px;
+          line-height: 0.8;
+          text-align: center;
+          white-space: nowrap;
+          opacity: 0.82;
+        }
+
+        .checked-sleep-label {
+          color: #a7e7c5;
+          font-family: var(--font-body);
+          font-size: 1rem;
+          font-weight: 650;
+          white-space: nowrap;
+        }
+
+        .checked-sleep-check {
+          display: grid;
+          width: 54px;
+          height: 54px;
+          place-items: center;
+          justify-self: end;
+          border-radius: 50%;
+          color: #203a38;
+          background: linear-gradient(145deg, #c8f4d9, #89d5b5);
+          box-shadow: 0 0 24px rgba(137, 213, 181, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+        }
+
+        .checked-sleep-note {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          margin-top: 10px;
+          padding: 3px 10px;
+          border-radius: 999px;
+          color: #eee8f5;
+          background: rgba(24, 20, 48, 0.28);
+          backdrop-filter: blur(6px);
+          font-family: var(--font-body);
+          font-size: 0.9rem;
+          font-weight: 500;
+          text-align: center;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+        }
+
+        .checked-sleep-note svg {
+          flex: none;
+          color: #89d5b5;
         }
 
         @keyframes float-pet {
@@ -836,57 +972,76 @@ export const Dashboard: React.FC = () => {
             ========================================= */}
         <div className="view-panel">
           <div className="pet-sanctuary-container">
-            {/* The Isolated Koala Asset */}
-            <img 
-              src={koalaImage}
-              alt={koalaAlt}
-              className={`pet-sprite-image${isInBedAnimation ? ' in-bed' : ''}`}
-            />
-
-            {/* Dynamic Bedtime Narrative */}
-            <div className="pet-narrative-text">
-              {showSleepingInBedAnimation
-                ? "Koala is sleeping soundly 💤"
-                : showAwakeInBedAnimation
-                  ? "Koala is tucked in and waiting for you..."
-                  : showVeryWeakEatingAnimation
-                ? "Koala is exhausted and can barely stay awake..."
-                : showWeakEatingAnimation
-                ? "Koala is low on energy and eating slowly..."
-                : bedtimeState.mode === 'goal' && bedtimeState.remainingMinutes && bedtimeState.remainingMinutes < 120 
-                ? "Koala is a little bit sleepy..." 
-                : bedtimeState.mode === 'lateWindow' 
-                  ? "Koala is waiting up late for you..."
-                  : bedtimeState.mode === 'onTime' 
-                    ? "Koala is sleeping soundly 💤"
-                    : "Koala is enjoying the evening"}
+            {/* Greeting */}
+            <div className="greeting-text" style={{ fontFamily: 'var(--font-serif)', fontSize: '2.2rem', color: '#f3edd7', marginBottom: '8px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+              Good night, Lisa <span style={{ color: '#a78bfa', textShadow: 'none' }}>❤</span>
+            </div>
+            <div className="greeting-subtext" style={{ fontFamily: 'var(--font-body)', fontSize: '1.05rem', color: '#aeb9cc', marginBottom: '16px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+              Let's help Koala get the best sleep
             </div>
             
-            <div className="pet-goal-subtext">
-              Today's bedtime goal is {formatCutoff12h(summary?.cutoffTime)}
+            <div className="bedtime-goal-pill" style={{ 
+               display: 'inline-flex', alignItems: 'center', gap: '8px', 
+               padding: '8px 16px', background: 'rgba(255,255,255,0.05)', 
+               border: '1px solid rgba(255,255,255,0.1)', borderRadius: '99px',
+               color: '#e2e8f0', fontSize: '0.9rem', marginBottom: '12px' 
+            }}>
+              <Moon size={16} color="#a78bfa" />
+              <span>Bedtime goal: {formatCutoff12h(summary?.cutoffTime)}</span>
+            </div>
+
+            {/* The Isolated Koala Asset */}
+            <div className={`pet-sprite-stage${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}>
+              <img 
+                src={koalaImage}
+                alt={koalaAlt}
+                className={`pet-sprite-image${isInBedAnimation ? ' in-bed' : ''}`}
+              />
             </div>
 
             {/* The primary action replacing countdowns on this screen */}
-            {summary?.todayCheckedIn ? (
-              <div style={{ padding: '16px 24px', background: 'rgba(78, 168, 129, 0.2)', border: '1px solid rgba(78, 168, 129, 0.4)', borderRadius: '99px', display: 'flex', alignItems: 'center', gap: '10px', color: '#4ea881', fontWeight: '600', fontSize: '1.2rem' }}>
-                <CheckCircle size={22} />
-                <span>Checked In Successfully!</span>
+            {showRecordedCheckIn ? (
+              <div className="checked-sleep-state">
+                <div className="checked-sleep-control" aria-label="Bedtime check-in recorded">
+                  <div className="checked-sleep-moon" aria-hidden="true">
+                    <Moon size={25} />
+                  </div>
+                  <div className="checked-sleep-copy">
+                    <span className="checked-sleep-dots" aria-hidden="true">••••••••••••••</span>
+                    <span className="checked-sleep-label">Checked in for tonight</span>
+                  </div>
+                  <div className="checked-sleep-check" aria-hidden="true">
+                    <Check size={30} strokeWidth={2.8} />
+                  </div>
+                </div>
+                <div className="checked-sleep-note">
+                  <CheckCircle size={17} />
+                  <span>Bedtime check-in recorded. Sweet dreams, {nickname || 'Koala'}.</span>
+                </div>
               </div>
             ) : (
-              <button
-                className="sleep-action-btn-large"
-                onClick={handleCheckIn}
-                disabled={isLoading}
-              >
-                <Moon size={24} />
-                <span>
-                  {isLoading
-                    ? 'Checking in...'
-                    : bedtimeState.mode === 'lateWindow'
-                      ? 'Check in now'
-                      : "I'm going to sleep"}
-                </span>
-              </button>
+              <div className="slider-wrapper" style={{ position: 'relative', zIndex: 4, width: '380px', maxWidth: '90vw', height: '72px', marginTop: '-36px', background: 'rgba(30, 27, 75, 0.6)', border: '1.5px solid rgba(167, 139, 250, 0.3)', borderRadius: '99px', overflow: 'hidden' }}>
+                
+                <div className="slider-text" style={{ position: 'absolute', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', color: '#b19df7', fontSize: '1.15rem', gap: '12px', opacity: 1 - (slideVal / 100), fontFamily: 'var(--font-body)', fontWeight: 500 }}>
+                   <span style={{ letterSpacing: '4px', opacity: 0.5 }}>········</span>
+                   Slide to tuck Koala in
+                </div>
+                
+                <div className="slider-thumb" style={{ position: 'absolute', top: '5px', left: `calc(6px + ${slideVal}% - ${slideVal * 0.72}px)`, width: '60px', height: '60px', background: '#ffe4a0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(255, 228, 160, 0.4)', pointerEvents: 'none', zIndex: 5 }}>
+                   <Moon size={28} color="#9061f9" />
+                </div>
+
+                <input 
+                  type="range"
+                  min="0" max="100"
+                  value={slideVal}
+                  onChange={(e) => setSlideVal(Number(e.target.value))}
+                  onMouseUp={() => { if (slideVal > 90 && !isLoading) { handleCheckIn(); } setSlideVal(0); }}
+                  onTouchEnd={() => { if (slideVal > 90 && !isLoading) { handleCheckIn(); } setSlideVal(0); }}
+                  disabled={isLoading}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, zIndex: 10, cursor: 'grab' }}
+                />
+              </div>
             )}
             {error && <div style={{ color: '#f87171', marginTop: '12px' }}>{error}</div>}
           </div>

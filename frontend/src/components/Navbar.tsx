@@ -7,7 +7,7 @@ import userAvatar from '../assets/user_avatar.png';
 import sidebarLogo from '../assets/sidebar_logo.png';
 
 export const Navbar: React.FC = () => {
-  const { nickname, logout } = useStore();
+  const { nickname, avatarUrl, logout } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -35,17 +35,11 @@ export const Navbar: React.FC = () => {
           right: 0;
           height: 80px;
           background: transparent;
-          backdrop-filter: blur(4px);
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: 0 40px;
           z-index: 100;
-          transition: background 0.3s ease;
-        }
-
-        .top-navbar-container:hover {
-          background: linear-gradient(180deg, rgba(8, 12, 29, 0.6) 0%, rgba(8, 12, 29, 0) 100%);
         }
 
         /* Brand Left */
@@ -62,12 +56,19 @@ export const Navbar: React.FC = () => {
           font-weight: 600;
           color: #f3edd7;
           letter-spacing: 0.02em;
+          text-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.6);
         }
 
         .nav-center-menu {
           display: flex;
           align-items: center;
-          gap: 32px;
+          gap: 12px;
+          background: rgba(20, 26, 54, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 6px 12px;
+          border-radius: 999px;
+          backdrop-filter: blur(12px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }
 
         .nav-item-link {
@@ -80,8 +81,8 @@ export const Navbar: React.FC = () => {
           font-weight: 500;
           text-decoration: none;
           transition: all 0.2s ease;
-          padding: 8px 12px;
-          border-radius: 12px;
+          padding: 8px 16px;
+          border-radius: 999px;
         }
 
         .nav-item-link:hover {
@@ -229,7 +230,7 @@ export const Navbar: React.FC = () => {
       {/* Right: Profile */}
       <div className="nav-right-profile">
         <div className="profile-trigger" onClick={() => setAccountMenuOpen(!accountMenuOpen)}>
-          <img src={userAvatar} alt={displayName} className="nav-avatar" />
+          <img src={avatarUrl || userAvatar} alt={`${displayName}'s avatar`} className="nav-avatar" />
           <span className="user-name-text">{displayName}</span>
           <ChevronDown size={16} color="#8e9bb4" />
         </div>

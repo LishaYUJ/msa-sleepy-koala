@@ -12,5 +12,8 @@ namespace SleepyKoala.Api.DTOs
         
         [Required]
         public required string ThemePreference { get; set; }
+
+        [StringLength(700000)]
+        public string? AvatarDataUrl { get; set; }
     }
 }

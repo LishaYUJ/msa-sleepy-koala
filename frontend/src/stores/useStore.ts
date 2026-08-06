@@ -41,6 +41,7 @@ export interface UserSettingsDto {
   nickname: string;
   cutoffTime: string;
   themePreference: string;
+  avatarDataUrl?: string | null;
 }
 
 interface AppState {
@@ -49,6 +50,7 @@ interface AppState {
   userId: string | null;
   email: string | null;
   nickname: string | null;
+  avatarUrl: string | null;
   theme: 'light' | 'dark';
   isLoading: boolean;
   error: string | null;
@@ -108,6 +110,7 @@ export const useStore = create<AppState>((set, get) => ({
   userId: localStorage.getItem('userId'),
   email: localStorage.getItem('email'),
   nickname: localStorage.getItem('nickname'),
+  avatarUrl: localStorage.getItem('avatarUrl'),
   theme: (localStorage.getItem('theme') as 'light' | 'dark') || 
          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   isLoading: false,
@@ -133,12 +136,18 @@ export const useStore = create<AppState>((set, get) => ({
       localStorage.setItem('userId', response.userId);
       localStorage.setItem('email', response.email);
       localStorage.setItem('nickname', response.nickname);
+      if (response.avatarDataUrl) {
+        localStorage.setItem('avatarUrl', response.avatarDataUrl);
+      } else {
+        localStorage.removeItem('avatarUrl');
+      }
       
       set({
         token: response.token,
         userId: response.userId,
         email: response.email,
         nickname: response.nickname,
+        avatarUrl: response.avatarDataUrl || null,
         isLoading: false,
       });
 
@@ -159,12 +168,18 @@ export const useStore = create<AppState>((set, get) => ({
       localStorage.setItem('userId', response.userId);
       localStorage.setItem('email', response.email);
       localStorage.setItem('nickname', response.nickname);
+      if (response.avatarDataUrl) {
+        localStorage.setItem('avatarUrl', response.avatarDataUrl);
+      } else {
+        localStorage.removeItem('avatarUrl');
+      }
       
       set({
         token: response.token,
         userId: response.userId,
         email: response.email,
         nickname: response.nickname,
+        avatarUrl: response.avatarDataUrl || null,
         isLoading: false,
       });
 
@@ -181,11 +196,13 @@ export const useStore = create<AppState>((set, get) => ({
     localStorage.removeItem('userId');
     localStorage.removeItem('email');
     localStorage.removeItem('nickname');
+    localStorage.removeItem('avatarUrl');
     set({
       token: null,
       userId: null,
       email: null,
       nickname: null,
+      avatarUrl: null,
       summary: null,
       history: [],
       leaderboard: [],
@@ -300,10 +317,16 @@ export const useStore = create<AppState>((set, get) => ({
       // Store nickname in localStorage
       localStorage.setItem('nickname', response.nickname);
       localStorage.setItem('theme', response.themePreference);
+      if (response.avatarDataUrl) {
+        localStorage.setItem('avatarUrl', response.avatarDataUrl);
+      } else {
+        localStorage.removeItem('avatarUrl');
+      }
       
       // Update local state theme and nickname
       set({ 
         nickname: response.nickname,
+        avatarUrl: response.avatarDataUrl || null,
         theme: response.themePreference === 'system' 
           ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
           : (response.themePreference as 'light' | 'dark'),

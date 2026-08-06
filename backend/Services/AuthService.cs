@@ -56,6 +56,7 @@ namespace SleepyKoala.Api.Services
                 UserId = user.Id,
                 Email = user.Email,
                 Nickname = user.Nickname,
+                AvatarDataUrl = user.AvatarDataUrl,
                 Token = token
             };
         }
@@ -74,6 +75,7 @@ namespace SleepyKoala.Api.Services
                 UserId = user.Id,
                 Email = user.Email,
                 Nickname = user.Nickname,
+                AvatarDataUrl = user.AvatarDataUrl,
                 Token = token
             };
         }

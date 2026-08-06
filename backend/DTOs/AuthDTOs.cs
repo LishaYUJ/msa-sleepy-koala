@@ -29,6 +29,7 @@ namespace SleepyKoala.Api.DTOs
         public Guid UserId { get; set; }
         public required string Email { get; set; }
         public required string Nickname { get; set; }
+        public string? AvatarDataUrl { get; set; }
         public required string Token { get; set; }
     }
 }

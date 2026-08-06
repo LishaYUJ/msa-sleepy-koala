@@ -148,6 +148,58 @@ namespace SleepyKoala.Tests
         }
 
         [Fact]
+        public async Task AuthenticatedUser_CanSaveAndReloadAvatar()
+        {
+            const string avatar = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+            var client = _factory.CreateClient();
+            var credentials = await RegisterUserAsync(client);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credentials.Token);
+
+            var updateResponse = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
+            {
+                Nickname = credentials.Nickname,
+                CutoffTime = "22:00",
+                ThemePreference = "system",
+                AvatarDataUrl = avatar
+            });
+
+            Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+            var updatedSettings = await updateResponse.Content.ReadFromJsonAsync<SettingsDto>();
+            Assert.Equal(avatar, updatedSettings!.AvatarDataUrl);
+
+            var getResponse = await client.GetAsync("/api/settings/me");
+            var reloadedSettings = await getResponse.Content.ReadFromJsonAsync<SettingsDto>();
+            Assert.Equal(avatar, reloadedSettings!.AvatarDataUrl);
+
+            client.DefaultRequestHeaders.Authorization = null;
+            var loginResponse = await client.PostAsJsonAsync("/api/Auth/login", new LoginRequest
+            {
+                Email = credentials.Email,
+                Password = credentials.Password
+            });
+            var auth = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>();
+            Assert.Equal(avatar, auth!.AvatarDataUrl);
+        }
+
+        [Fact]
+        public async Task Settings_RejectsAvatarWithMismatchedImageContents()
+        {
+            var client = _factory.CreateClient();
+            var credentials = await RegisterUserAsync(client);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credentials.Token);
+
+            var response = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
+            {
+                Nickname = credentials.Nickname,
+                CutoffTime = "22:00",
+                ThemePreference = "system",
+                AvatarDataUrl = "data:image/png;base64,bm90IGFuIGltYWdl"
+            });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
         public async Task ProtectedApis_RejectMissingToken()
         {
             var client = _factory.CreateClient();
