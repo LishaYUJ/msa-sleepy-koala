@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { formatRemainingTime, resolveBedtimeCardState } from '../utils/bedtimeCard';
+import {
+  formatRemainingTime,
+  resolveBedtimeCardState,
+  shouldShowEnjoyingLifeAnimation,
+} from '../utils/bedtimeCard';
 
 const at = (hours: number, minutes = 0) => new Date(2026, 7, 5, hours, minutes);
 
@@ -44,5 +48,30 @@ describe('resolveBedtimeCardState', () => {
   it('formats remaining time in compact English', () => {
     expect(formatRemainingTime(135)).toBe('2h 15m');
     expect(formatRemainingTime(45)).toBe('45m');
+  });
+});
+
+describe('shouldShowEnjoyingLifeAnimation', () => {
+  it('starts showing at exactly 8 AM for a healthy koala', () => {
+    expect(shouldShowEnjoyingLifeAnimation(at(8), '23:30', 'healthy')).toBe(true);
+  });
+
+  it('does not show before 8 AM', () => {
+    expect(shouldShowEnjoyingLifeAnimation(at(7, 59), '23:30', 'healthy')).toBe(false);
+  });
+
+  it('stops at exactly 30 minutes before bedtime', () => {
+    expect(shouldShowEnjoyingLifeAnimation(at(22, 59), '23:30', 'healthy')).toBe(true);
+    expect(shouldShowEnjoyingLifeAnimation(at(23), '23:30', 'healthy')).toBe(false);
+  });
+
+  it('supports a midnight bedtime', () => {
+    expect(shouldShowEnjoyingLifeAnimation(at(23, 29), '00:00', 'healthy')).toBe(true);
+    expect(shouldShowEnjoyingLifeAnimation(at(23, 30), '00:00', 'healthy')).toBe(false);
+  });
+
+  it('never shows for weak or very weak koalas', () => {
+    expect(shouldShowEnjoyingLifeAnimation(at(12), '23:30', 'weak')).toBe(false);
+    expect(shouldShowEnjoyingLifeAnimation(at(12), '23:30', 'veryWeak')).toBe(false);
   });
 });

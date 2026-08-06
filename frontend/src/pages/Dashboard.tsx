@@ -2,9 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore, getCurrentSleepDateString, getLocalDateString } from '../stores/useStore';
 import { Sparkles, Moon, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, ChevronLeft } from 'lucide-react';
-import { formatRemainingTime, resolveBedtimeCardState } from '../utils/bedtimeCard';
+import {
+  formatRemainingTime,
+  resolveBedtimeCardState,
+  shouldShowEnjoyingLifeAnimation,
+} from '../utils/bedtimeCard';
 
 import isolatedKoalaPet from '../assets/isolated_koala_pet.png';
+import koalaEnjoyingLife from '../assets/koala_enjoying_life.png';
 
 
 export const Dashboard: React.FC = () => {
@@ -55,6 +60,11 @@ export const Dashboard: React.FC = () => {
   const gaugeCircumference = 2 * Math.PI * 68;
   const gaugeOffset = gaugeCircumference * (1 - bedtimeState.progressPercent / 100);
   const showCountdown = bedtimeState.mode === 'goal' || bedtimeState.mode === 'lateWindow';
+  const showEnjoyingLifeAnimation = shouldShowEnjoyingLifeAnimation(
+    currentTime,
+    summary?.cutoffTime,
+    summary?.fatigueState,
+  );
 
   const bedtimeResult = {
     onTime: {
@@ -761,8 +771,8 @@ export const Dashboard: React.FC = () => {
           <div className="pet-sanctuary-container">
             {/* The Isolated Koala Asset */}
             <img 
-              src={isolatedKoalaPet} 
-              alt="Your Virtual Pet Koala" 
+              src={showEnjoyingLifeAnimation ? koalaEnjoyingLife : isolatedKoalaPet}
+              alt={showEnjoyingLifeAnimation ? 'Koala happily eating eucalyptus leaves' : 'Your Virtual Pet Koala'}
               className="pet-sprite-image" 
             />
 

@@ -16,6 +16,22 @@ const parseCutoffMinutes = (cutoffTime?: string) => {
   return hours * 60 + minutes;
 };
 
+export const shouldShowEnjoyingLifeAnimation = (
+  now: Date,
+  cutoffTime: string | undefined,
+  fatigueState: 'healthy' | 'weak' | 'veryWeak' | undefined,
+) => {
+  if (fatigueState !== 'healthy') return false;
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const cutoffMinutes = parseCutoffMinutes(cutoffTime);
+  const windDownStartMinutes = cutoffMinutes === 0
+    ? 23 * 60 + 30
+    : cutoffMinutes - 30;
+
+  return nowMinutes >= 8 * 60 && nowMinutes < windDownStartMinutes;
+};
+
 export const resolveBedtimeCardState = (
   now: Date,
   cutoffTime: string | undefined,
