@@ -54,7 +54,9 @@ async function request<T>(
   }
 
   if (!response.ok) {
-    if (response.status === 401) {
+    // Only clear an existing session for protected requests. A 401 from the
+    // login endpoint has no token and should keep its validation message.
+    if (response.status === 401 && token) {
       try {
         import('../stores/useStore').then(({ useStore }) => {
           useStore.getState().logout();
