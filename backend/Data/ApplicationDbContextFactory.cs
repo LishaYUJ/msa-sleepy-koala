@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace SleepyKoala.Api.Data;
 
@@ -14,7 +15,12 @@ public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Ap
 
         if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
         {
-            options.UseSqlServer(connectionString);
+            options
+                .UseSqlServer(connectionString)
+                // The shared migration snapshot is generated with the local SQLite provider.
+                // Migration operations select provider-specific SQL types at runtime.
+                .ConfigureWarnings(warnings => warnings.Ignore(
+                    RelationalEventId.PendingModelChangesWarning));
         }
         else if (provider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
         {
