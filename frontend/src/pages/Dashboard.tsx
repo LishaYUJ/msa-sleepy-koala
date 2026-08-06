@@ -1,20 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore, getCurrentSleepDateString, getLocalDateString } from '../stores/useStore';
 import { Sparkles, Moon, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, ChevronLeft } from 'lucide-react';
 import {
   formatRemainingTime,
   resolveBedtimeCardState,
   shouldShowEnjoyingLifeAnimation,
+  shouldShowVeryWeakEatingAnimation,
+  shouldShowWeakEatingAnimation,
 } from '../utils/bedtimeCard';
 
 import isolatedKoalaPet from '../assets/isolated_koala_pet.png';
 import koalaEnjoyingLife from '../assets/koala_enjoying_life.png';
+import koalaVeryWeakEating from '../assets/koala_very_weak_eating.png';
+import koalaWeakEating from '../assets/koala_weak_eating.png';
 
 
 export const Dashboard: React.FC = () => {
   const { summary, loadSummary, performCheckIn, isLoading, error, history, loadHistory } = useStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentView, setCurrentView] = useState<'pet' | 'progress'>('pet');
@@ -65,6 +70,35 @@ export const Dashboard: React.FC = () => {
     summary?.cutoffTime,
     summary?.fatigueState,
   );
+  const previewKoalaMood = (searchParams.get('koalaMood') || '')
+    .replace(/[-_]/g, '')
+    .toLowerCase();
+  const previewWeakEating = previewKoalaMood === 'weak';
+  const previewVeryWeakEating = previewKoalaMood === 'veryweak';
+  const showWeakEatingAnimation = previewWeakEating || shouldShowWeakEatingAnimation(
+    currentTime,
+    summary?.cutoffTime,
+    summary?.fatigueState,
+  );
+  const showVeryWeakEatingAnimation = previewVeryWeakEating || shouldShowVeryWeakEatingAnimation(
+    currentTime,
+    summary?.cutoffTime,
+    summary?.fatigueState,
+  );
+  const koalaImage = showVeryWeakEatingAnimation
+    ? koalaVeryWeakEating
+    : showWeakEatingAnimation
+    ? koalaWeakEating
+    : showEnjoyingLifeAnimation
+      ? koalaEnjoyingLife
+      : isolatedKoalaPet;
+  const koalaAlt = showVeryWeakEatingAnimation
+    ? 'An exhausted koala sleepily eating a eucalyptus leaf'
+    : showWeakEatingAnimation
+    ? 'A tired koala slowly eating a eucalyptus leaf'
+    : showEnjoyingLifeAnimation
+      ? 'Koala happily eating eucalyptus leaves'
+      : 'Your virtual pet koala';
 
   const bedtimeResult = {
     onTime: {
@@ -771,14 +805,18 @@ export const Dashboard: React.FC = () => {
           <div className="pet-sanctuary-container">
             {/* The Isolated Koala Asset */}
             <img 
-              src={showEnjoyingLifeAnimation ? koalaEnjoyingLife : isolatedKoalaPet}
-              alt={showEnjoyingLifeAnimation ? 'Koala happily eating eucalyptus leaves' : 'Your Virtual Pet Koala'}
+              src={koalaImage}
+              alt={koalaAlt}
               className="pet-sprite-image" 
             />
 
             {/* Dynamic Bedtime Narrative */}
             <div className="pet-narrative-text">
-              {bedtimeState.mode === 'goal' && bedtimeState.remainingMinutes && bedtimeState.remainingMinutes < 120 
+              {showVeryWeakEatingAnimation
+                ? "Koala is exhausted and can barely stay awake..."
+                : showWeakEatingAnimation
+                ? "Koala is low on energy and eating slowly..."
+                : bedtimeState.mode === 'goal' && bedtimeState.remainingMinutes && bedtimeState.remainingMinutes < 120 
                 ? "Koala is a little bit sleepy..." 
                 : bedtimeState.mode === 'lateWindow' 
                   ? "Koala is waiting up late for you..."

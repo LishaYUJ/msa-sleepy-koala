@@ -3,6 +3,8 @@ import {
   formatRemainingTime,
   resolveBedtimeCardState,
   shouldShowEnjoyingLifeAnimation,
+  shouldShowVeryWeakEatingAnimation,
+  shouldShowWeakEatingAnimation,
 } from '../utils/bedtimeCard';
 
 const at = (hours: number, minutes = 0) => new Date(2026, 7, 5, hours, minutes);
@@ -73,5 +75,39 @@ describe('shouldShowEnjoyingLifeAnimation', () => {
   it('never shows for weak or very weak koalas', () => {
     expect(shouldShowEnjoyingLifeAnimation(at(12), '23:30', 'weak')).toBe(false);
     expect(shouldShowEnjoyingLifeAnimation(at(12), '23:30', 'veryWeak')).toBe(false);
+  });
+});
+
+describe('shouldShowWeakEatingAnimation', () => {
+  it('shows a weak koala during the daytime mood window', () => {
+    expect(shouldShowWeakEatingAnimation(at(8), '23:30', 'weak')).toBe(true);
+    expect(shouldShowWeakEatingAnimation(at(22, 59), '23:30', 'weak')).toBe(true);
+  });
+
+  it('does not override the morning or wind-down states', () => {
+    expect(shouldShowWeakEatingAnimation(at(7, 59), '23:30', 'weak')).toBe(false);
+    expect(shouldShowWeakEatingAnimation(at(23), '23:30', 'weak')).toBe(false);
+  });
+
+  it('does not show for healthy or very weak koalas', () => {
+    expect(shouldShowWeakEatingAnimation(at(12), '23:30', 'healthy')).toBe(false);
+    expect(shouldShowWeakEatingAnimation(at(12), '23:30', 'veryWeak')).toBe(false);
+  });
+});
+
+describe('shouldShowVeryWeakEatingAnimation', () => {
+  it('shows a very weak koala during the daytime mood window', () => {
+    expect(shouldShowVeryWeakEatingAnimation(at(8), '23:30', 'veryWeak')).toBe(true);
+    expect(shouldShowVeryWeakEatingAnimation(at(22, 59), '23:30', 'veryWeak')).toBe(true);
+  });
+
+  it('does not override the morning or wind-down states', () => {
+    expect(shouldShowVeryWeakEatingAnimation(at(7, 59), '23:30', 'veryWeak')).toBe(false);
+    expect(shouldShowVeryWeakEatingAnimation(at(23), '23:30', 'veryWeak')).toBe(false);
+  });
+
+  it('does not show for healthy or weak koalas', () => {
+    expect(shouldShowVeryWeakEatingAnimation(at(12), '23:30', 'healthy')).toBe(false);
+    expect(shouldShowVeryWeakEatingAnimation(at(12), '23:30', 'weak')).toBe(false);
   });
 });

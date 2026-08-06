@@ -16,13 +16,7 @@ const parseCutoffMinutes = (cutoffTime?: string) => {
   return hours * 60 + minutes;
 };
 
-export const shouldShowEnjoyingLifeAnimation = (
-  now: Date,
-  cutoffTime: string | undefined,
-  fatigueState: 'healthy' | 'weak' | 'veryWeak' | undefined,
-) => {
-  if (fatigueState !== 'healthy') return false;
-
+const isDaytimeKoalaWindow = (now: Date, cutoffTime?: string) => {
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const cutoffMinutes = parseCutoffMinutes(cutoffTime);
   const windDownStartMinutes = cutoffMinutes === 0
@@ -31,6 +25,27 @@ export const shouldShowEnjoyingLifeAnimation = (
 
   return nowMinutes >= 8 * 60 && nowMinutes < windDownStartMinutes;
 };
+
+export const shouldShowEnjoyingLifeAnimation = (
+  now: Date,
+  cutoffTime: string | undefined,
+  fatigueState: 'healthy' | 'weak' | 'veryWeak' | undefined,
+) => {
+  if (fatigueState !== 'healthy') return false;
+  return isDaytimeKoalaWindow(now, cutoffTime);
+};
+
+export const shouldShowWeakEatingAnimation = (
+  now: Date,
+  cutoffTime: string | undefined,
+  fatigueState: 'healthy' | 'weak' | 'veryWeak' | undefined,
+) => fatigueState === 'weak' && isDaytimeKoalaWindow(now, cutoffTime);
+
+export const shouldShowVeryWeakEatingAnimation = (
+  now: Date,
+  cutoffTime: string | undefined,
+  fatigueState: 'healthy' | 'weak' | 'veryWeak' | undefined,
+) => fatigueState === 'veryWeak' && isDaytimeKoalaWindow(now, cutoffTime);
 
 export const resolveBedtimeCardState = (
   now: Date,
