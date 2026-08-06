@@ -47,6 +47,32 @@ export const shouldShowVeryWeakEatingAnimation = (
   fatigueState: 'healthy' | 'weak' | 'veryWeak' | undefined,
 ) => fatigueState === 'veryWeak' && isDaytimeKoalaWindow(now, cutoffTime);
 
+export const shouldShowAwakeInBedAnimation = (
+  now: Date,
+  cutoffTime: string | undefined,
+  todayCheckedIn: boolean,
+  todayStatus: string | null | undefined,
+) => {
+  if (todayCheckedIn || todayStatus === 'missing') return false;
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const cutoffMinutes = parseCutoffMinutes(cutoffTime);
+  const windDownStartMinutes = cutoffMinutes === 0
+    ? 23 * 60 + 30
+    : cutoffMinutes - 30;
+
+  return nowMinutes >= windDownStartMinutes || nowMinutes <= CHECK_IN_END_MINUTES;
+};
+
+export const shouldShowSleepingInBedAnimation = (
+  now: Date,
+  todayCheckedIn: boolean,
+) => {
+  if (!todayCheckedIn) return false;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return nowMinutes >= CHECK_IN_START_MINUTES || nowMinutes < 8 * 60;
+};
+
 export const resolveBedtimeCardState = (
   now: Date,
   cutoffTime: string | undefined,

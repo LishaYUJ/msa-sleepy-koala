@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   formatRemainingTime,
   resolveBedtimeCardState,
+  shouldShowAwakeInBedAnimation,
   shouldShowEnjoyingLifeAnimation,
+  shouldShowSleepingInBedAnimation,
   shouldShowVeryWeakEatingAnimation,
   shouldShowWeakEatingAnimation,
 } from '../utils/bedtimeCard';
@@ -109,5 +111,35 @@ describe('shouldShowVeryWeakEatingAnimation', () => {
   it('does not show for healthy or weak koalas', () => {
     expect(shouldShowVeryWeakEatingAnimation(at(12), '23:30', 'healthy')).toBe(false);
     expect(shouldShowVeryWeakEatingAnimation(at(12), '23:30', 'weak')).toBe(false);
+  });
+});
+
+describe('shouldShowAwakeInBedAnimation', () => {
+  it('starts 30 minutes before bedtime for an unchecked koala', () => {
+    expect(shouldShowAwakeInBedAnimation(at(22, 59), '23:30', false, null)).toBe(false);
+    expect(shouldShowAwakeInBedAnimation(at(23), '23:30', false, null)).toBe(true);
+  });
+
+  it('continues through the late check-in window', () => {
+    expect(shouldShowAwakeInBedAnimation(at(23, 45), '23:30', false, null)).toBe(true);
+    expect(shouldShowAwakeInBedAnimation(at(1, 59), '23:30', false, null)).toBe(true);
+  });
+
+  it('does not show after a check-in or a recorded miss', () => {
+    expect(shouldShowAwakeInBedAnimation(at(23), '23:30', true, 'onTime')).toBe(false);
+    expect(shouldShowAwakeInBedAnimation(at(1), '23:30', false, 'missing')).toBe(false);
+  });
+});
+
+describe('shouldShowSleepingInBedAnimation', () => {
+  it('shows after check-in through the nighttime and before 8 AM', () => {
+    expect(shouldShowSleepingInBedAnimation(at(21), true)).toBe(true);
+    expect(shouldShowSleepingInBedAnimation(at(3), true)).toBe(true);
+    expect(shouldShowSleepingInBedAnimation(at(7, 59), true)).toBe(true);
+  });
+
+  it('returns to a daytime mood at 8 AM and never shows before check-in', () => {
+    expect(shouldShowSleepingInBedAnimation(at(8), true)).toBe(false);
+    expect(shouldShowSleepingInBedAnimation(at(23), false)).toBe(false);
   });
 });

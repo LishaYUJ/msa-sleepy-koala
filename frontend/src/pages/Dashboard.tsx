@@ -5,13 +5,17 @@ import { Sparkles, Moon, CheckCircle, X, Award, Flame, AlertCircle, Clock3, Chev
 import {
   formatRemainingTime,
   resolveBedtimeCardState,
+  shouldShowAwakeInBedAnimation,
   shouldShowEnjoyingLifeAnimation,
+  shouldShowSleepingInBedAnimation,
   shouldShowVeryWeakEatingAnimation,
   shouldShowWeakEatingAnimation,
 } from '../utils/bedtimeCard';
 
 import isolatedKoalaPet from '../assets/isolated_koala_pet.png';
+import koalaAwakeInBed from '../assets/koala_awake_in_bed.png';
 import koalaEnjoyingLife from '../assets/koala_enjoying_life.png';
+import koalaSleepingInBed from '../assets/koala_sleeping_in_bed.png';
 import koalaVeryWeakEating from '../assets/koala_very_weak_eating.png';
 import koalaWeakEating from '../assets/koala_weak_eating.png';
 
@@ -65,40 +69,65 @@ export const Dashboard: React.FC = () => {
   const gaugeCircumference = 2 * Math.PI * 68;
   const gaugeOffset = gaugeCircumference * (1 - bedtimeState.progressPercent / 100);
   const showCountdown = bedtimeState.mode === 'goal' || bedtimeState.mode === 'lateWindow';
-  const showEnjoyingLifeAnimation = shouldShowEnjoyingLifeAnimation(
-    currentTime,
-    summary?.cutoffTime,
-    summary?.fatigueState,
-  );
   const previewKoalaMood = (searchParams.get('koalaMood') || '')
     .replace(/[-_]/g, '')
     .toLowerCase();
   const previewWeakEating = previewKoalaMood === 'weak';
   const previewVeryWeakEating = previewKoalaMood === 'veryweak';
-  const showWeakEatingAnimation = previewWeakEating || shouldShowWeakEatingAnimation(
+  const previewAwakeInBed = previewKoalaMood === 'awakeinbed';
+  const previewSleepingInBed = previewKoalaMood === 'sleepinginbed';
+  const hasKoalaPreview = previewWeakEating
+    || previewVeryWeakEating
+    || previewAwakeInBed
+    || previewSleepingInBed;
+  const showEnjoyingLifeAnimation = !hasKoalaPreview && shouldShowEnjoyingLifeAnimation(
     currentTime,
     summary?.cutoffTime,
     summary?.fatigueState,
   );
-  const showVeryWeakEatingAnimation = previewVeryWeakEating || shouldShowVeryWeakEatingAnimation(
+  const showWeakEatingAnimation = previewWeakEating || (!hasKoalaPreview && shouldShowWeakEatingAnimation(
     currentTime,
     summary?.cutoffTime,
     summary?.fatigueState,
-  );
-  const koalaImage = showVeryWeakEatingAnimation
+  ));
+  const showVeryWeakEatingAnimation = previewVeryWeakEating || (!hasKoalaPreview && shouldShowVeryWeakEatingAnimation(
+    currentTime,
+    summary?.cutoffTime,
+    summary?.fatigueState,
+  ));
+  const showAwakeInBedAnimation = previewAwakeInBed || (!hasKoalaPreview && shouldShowAwakeInBedAnimation(
+    currentTime,
+    summary?.cutoffTime,
+    summary?.todayCheckedIn ?? false,
+    summary?.todayStatus,
+  ));
+  const showSleepingInBedAnimation = previewSleepingInBed || (!hasKoalaPreview && shouldShowSleepingInBedAnimation(
+    currentTime,
+    summary?.todayCheckedIn ?? false,
+  ));
+  const isInBedAnimation = showAwakeInBedAnimation || showSleepingInBedAnimation;
+  const koalaImage = showSleepingInBedAnimation
+    ? koalaSleepingInBed
+    : showAwakeInBedAnimation
+      ? koalaAwakeInBed
+      : showVeryWeakEatingAnimation
     ? koalaVeryWeakEating
     : showWeakEatingAnimation
-    ? koalaWeakEating
-    : showEnjoyingLifeAnimation
-      ? koalaEnjoyingLife
-      : isolatedKoalaPet;
-  const koalaAlt = showVeryWeakEatingAnimation
+      ? koalaWeakEating
+      : showEnjoyingLifeAnimation
+        ? koalaEnjoyingLife
+        : isolatedKoalaPet;
+  const koalaAlt = showSleepingInBedAnimation
+    ? 'Koala sleeping peacefully under a blanket'
+    : showAwakeInBedAnimation
+      ? 'Koala awake in bed and ready for bedtime'
+      : showVeryWeakEatingAnimation
     ? 'An exhausted koala sleepily eating a eucalyptus leaf'
     : showWeakEatingAnimation
-    ? 'A tired koala slowly eating a eucalyptus leaf'
-    : showEnjoyingLifeAnimation
-      ? 'Koala happily eating eucalyptus leaves'
-      : 'Your virtual pet koala';
+      ? 'A tired koala slowly eating a eucalyptus leaf'
+      : showEnjoyingLifeAnimation
+        ? 'Koala happily eating eucalyptus leaves'
+        : 'Your virtual pet koala';
 
   const bedtimeResult = {
     onTime: {
@@ -225,6 +254,10 @@ export const Dashboard: React.FC = () => {
           filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.4));
           animation: float-pet 6s ease-in-out infinite;
           margin-bottom: 24px;
+        }
+
+        .pet-sprite-image.in-bed {
+          animation: none;
         }
 
         @keyframes float-pet {
@@ -807,12 +840,16 @@ export const Dashboard: React.FC = () => {
             <img 
               src={koalaImage}
               alt={koalaAlt}
-              className="pet-sprite-image" 
+              className={`pet-sprite-image${isInBedAnimation ? ' in-bed' : ''}`}
             />
 
             {/* Dynamic Bedtime Narrative */}
             <div className="pet-narrative-text">
-              {showVeryWeakEatingAnimation
+              {showSleepingInBedAnimation
+                ? "Koala is sleeping soundly 💤"
+                : showAwakeInBedAnimation
+                  ? "Koala is tucked in and waiting for you..."
+                  : showVeryWeakEatingAnimation
                 ? "Koala is exhausted and can barely stay awake..."
                 : showWeakEatingAnimation
                 ? "Koala is low on energy and eating slowly..."
