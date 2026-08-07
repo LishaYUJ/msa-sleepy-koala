@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../stores/useStore';
 import { GlassCard } from '../components/GlassCard';
 import { Sparkles, Moon, Lock, Mail, User } from 'lucide-react';
 
 export const Auth: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isLogin = searchParams.get('mode') !== 'register';
   const [email, setEmail] = useState('');
   const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
@@ -60,7 +61,8 @@ export const Auth: React.FC = () => {
   };
 
   const toggleMode = () => {
-    setIsLogin(!isLogin);
+    const nextIsLogin = !isLogin;
+    setSearchParams(nextIsLogin ? {} : { mode: 'register' }, { replace: true });
     setLocalValidation(null);
     setError(null);
     setPassword('');

@@ -191,6 +191,9 @@ export const Navbar: React.FC = () => {
           .nav-center-menu {
             display: none;
           }
+          .nav-right-profile {
+            display: none;
+          }
           .top-navbar-container {
             padding: 0 20px;
           }

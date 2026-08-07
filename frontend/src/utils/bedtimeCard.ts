@@ -191,9 +191,15 @@ export const shouldShowAwakeInBedAnimation = (
 export const shouldShowSleepingInBedAnimation = (
   now: Date,
   todayCheckedIn: boolean,
+  todayStatus?: string | null,
 ) => {
-  if (!todayCheckedIn) return false;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // A missed check-in is a recorded outcome, but the sanctuary should remain
+  // in its nighttime sleeping scene until the daytime mood begins at 8 AM.
+  if (todayStatus === 'missing') return nowMinutes < 8 * 60;
+  if (!todayCheckedIn) return false;
+
   return nowMinutes >= CHECK_IN_START_MINUTES || nowMinutes < 8 * 60;
 };
 

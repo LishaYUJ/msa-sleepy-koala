@@ -128,6 +128,7 @@ export const Settings: React.FC = () => {
         nickname: localNickname.trim(),
         cutoffTime: cutoffTime,
         themePreference: themePreference,
+        onboardingCompleted: true,
         avatarDataUrl: profileAvatar === userAvatar ? '' : profileAvatar
       });
       

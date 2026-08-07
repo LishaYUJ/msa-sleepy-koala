@@ -14,7 +14,6 @@ import {
   shouldShowWeakEatingAnimation,
 } from '../utils/bedtimeCard';
 
-import isolatedKoalaPet from '../assets/isolated_koala_pet.png';
 import koalaAwakeInBed from '../assets/koala_awake_in_bed.png';
 import koalaEnjoyingLife from '../assets/koala_enjoying_life.png';
 import koalaSleepingInBed from '../assets/koala_sleeping_in_bed_soft_edge.png';
@@ -112,6 +111,7 @@ export const Dashboard: React.FC = () => {
   const showSleepingInBedAnimation = previewSleepingInBed || (!hasKoalaPreview && shouldShowSleepingInBedAnimation(
     currentTime,
     summary?.todayCheckedIn ?? false,
+    summary?.todayStatus,
   ));
   const isInBedAnimation = showAwakeInBedAnimation || showSleepingInBedAnimation;
   const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
@@ -142,7 +142,11 @@ export const Dashboard: React.FC = () => {
       ? koalaWeakEating
       : showEnjoyingLifeAnimation
         ? koalaEnjoyingLife
-        : isolatedKoalaPet;
+        : effectiveFatigueState === 'veryWeak'
+          ? koalaVeryWeakEating
+          : effectiveFatigueState === 'weak'
+            ? koalaWeakEating
+            : koalaEnjoyingLife;
   const koalaAlt = showSleepingInBedAnimation
     ? 'Koala sleeping peacefully under a blanket'
     : showAwakeInBedAnimation
@@ -153,7 +157,11 @@ export const Dashboard: React.FC = () => {
       ? 'A tired koala slowly eating a eucalyptus leaf'
       : showEnjoyingLifeAnimation
         ? 'Koala happily eating eucalyptus leaves'
-        : 'Your virtual pet koala';
+        : effectiveFatigueState === 'veryWeak'
+          ? 'An exhausted koala sleepily eating a eucalyptus leaf'
+          : effectiveFatigueState === 'weak'
+            ? 'A tired koala slowly eating a eucalyptus leaf'
+            : 'Koala happily eating eucalyptus leaves';
 
   const bedtimeResult = {
     onTime: {
@@ -1066,7 +1074,7 @@ export const Dashboard: React.FC = () => {
                 <span>Bedtime goal: {formatCutoff12h(summary?.cutoffTime)}</span>
               </div>
 
-              {/* The Isolated Koala Asset */}
+              {/* The animated koala state */}
               <div className={`pet-sprite-stage${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}>
                 <img 
                   src={koalaImage}
@@ -1168,7 +1176,7 @@ export const Dashboard: React.FC = () => {
                 <span>Bedtime goal: {formatCutoff12h(summary?.cutoffTime)}</span>
               </div>
 
-              {/* The Center Isolated Koala Asset */}
+              {/* The centered animated koala state */}
               <div className={`pet-sprite-stage${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}>
                 <img 
                   src={koalaImage}

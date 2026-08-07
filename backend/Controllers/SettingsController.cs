@@ -44,6 +44,7 @@ namespace SleepyKoala.Api.Controllers
                 Nickname = user.Nickname,
                 CutoffTime = user.Settings.CutoffTime,
                 ThemePreference = user.Settings.ThemePreference,
+                OnboardingCompleted = user.Settings.OnboardingCompleted,
                 AvatarDataUrl = user.AvatarDataUrl
             });
         }
@@ -79,6 +80,7 @@ namespace SleepyKoala.Api.Controllers
             user.Nickname = dto.Nickname.Trim();
             user.Settings.CutoffTime = dto.CutoffTime;
             user.Settings.ThemePreference = dto.ThemePreference;
+            user.Settings.OnboardingCompleted = dto.OnboardingCompleted;
             if (dto.AvatarDataUrl != null)
             {
                 user.AvatarDataUrl = string.IsNullOrWhiteSpace(dto.AvatarDataUrl)
@@ -93,6 +95,7 @@ namespace SleepyKoala.Api.Controllers
                 Nickname = user.Nickname,
                 CutoffTime = user.Settings.CutoffTime,
                 ThemePreference = user.Settings.ThemePreference,
+                OnboardingCompleted = user.Settings.OnboardingCompleted,
                 AvatarDataUrl = user.AvatarDataUrl
             });
         }

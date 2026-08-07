@@ -9,6 +9,8 @@ import { Leaderboard } from './pages/Leaderboard';
 import { Badges } from './pages/Badges';
 import { Settings } from './pages/Settings';
 import { History } from './pages/History';
+import { Landing } from './pages/Landing';
+import { Onboarding } from './pages/Onboarding';
 
 const StarrySky: React.FC = () => {
   return (
@@ -27,10 +29,22 @@ const StarrySky: React.FC = () => {
 };
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token } = useStore();
+  const { token, onboardingCompleted, loadSettings } = useStore();
+
+  useEffect(() => {
+    if (token && onboardingCompleted === null) loadSettings();
+  }, [token, onboardingCompleted, loadSettings]);
   
   if (!token) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (onboardingCompleted === null) {
+    return <div className="app-shell" aria-busy="true" />;
+  }
+
+  if (!onboardingCompleted) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return (
@@ -42,6 +56,24 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
       <MobileBottomNav />
     </div>
   );
+};
+
+const HomeRoute: React.FC = () => {
+  const { token } = useStore();
+  return token ? <Navigate to="/dashboard" replace /> : <Landing />;
+};
+
+const OnboardingRoute: React.FC = () => {
+  const { token, onboardingCompleted, loadSettings } = useStore();
+
+  useEffect(() => {
+    if (token && onboardingCompleted === null) loadSettings();
+  }, [token, onboardingCompleted, loadSettings]);
+
+  if (!token) return <Navigate to="/login" replace />;
+  if (onboardingCompleted === null) return <div className="app-shell" aria-busy="true" />;
+  if (onboardingCompleted) return <Navigate to="/dashboard" replace />;
+  return <Onboarding />;
 };
 
 const App: React.FC = () => {
@@ -60,15 +92,9 @@ const App: React.FC = () => {
         {/* Auth Route */}
         <Route path="/login" element={<Auth />} />
         
-        {/* Protected Dashboard Route */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<HomeRoute />} />
+        <Route path="/onboarding" element={<OnboardingRoute />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         
         {/* Protected Leaderboard Route */}
         <Route

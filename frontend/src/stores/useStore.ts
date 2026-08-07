@@ -41,6 +41,7 @@ export interface UserSettingsDto {
   nickname: string;
   cutoffTime: string;
   themePreference: string;
+  onboardingCompleted: boolean;
   avatarDataUrl?: string | null;
 }
 
@@ -51,6 +52,7 @@ interface AppState {
   email: string | null;
   nickname: string | null;
   avatarUrl: string | null;
+  onboardingCompleted: boolean | null;
   theme: 'light' | 'dark';
   isLoading: boolean;
   error: string | null;
@@ -74,6 +76,7 @@ interface AppState {
   loadLeaderboard: () => Promise<void>;
   loadBadges: () => Promise<void>;
   updateSettings: (dto: UserSettingsDto) => Promise<void>;
+  loadSettings: () => Promise<UserSettingsDto | null>;
   toggleTheme: () => void;
 }
 
@@ -111,6 +114,7 @@ export const useStore = create<AppState>((set, get) => ({
   email: localStorage.getItem('email'),
   nickname: localStorage.getItem('nickname'),
   avatarUrl: localStorage.getItem('avatarUrl'),
+  onboardingCompleted: null,
   theme: (localStorage.getItem('theme') as 'light' | 'dark') || 
          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   isLoading: false,
@@ -148,6 +152,7 @@ export const useStore = create<AppState>((set, get) => ({
         email: response.email,
         nickname: response.nickname,
         avatarUrl: response.avatarDataUrl || null,
+        onboardingCompleted: null,
         isLoading: false,
       });
 
@@ -180,6 +185,7 @@ export const useStore = create<AppState>((set, get) => ({
         email: response.email,
         nickname: response.nickname,
         avatarUrl: response.avatarDataUrl || null,
+        onboardingCompleted: null,
         isLoading: false,
       });
 
@@ -203,6 +209,7 @@ export const useStore = create<AppState>((set, get) => ({
       email: null,
       nickname: null,
       avatarUrl: null,
+      onboardingCompleted: null,
       summary: null,
       history: [],
       leaderboard: [],
@@ -327,6 +334,7 @@ export const useStore = create<AppState>((set, get) => ({
       set({ 
         nickname: response.nickname,
         avatarUrl: response.avatarDataUrl || null,
+        onboardingCompleted: response.onboardingCompleted,
         theme: response.themePreference === 'system' 
           ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
           : (response.themePreference as 'light' | 'dark'),
@@ -341,6 +349,20 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (err: any) {
       set({ isLoading: false, error: err.body?.message || err.message });
       throw err;
+    }
+  },
+
+  loadSettings: async () => {
+    const { token } = get();
+    if (!token) return null;
+
+    try {
+      const response = await api.get<UserSettingsDto>('/api/settings/me', token);
+      set({ onboardingCompleted: response.onboardingCompleted });
+      return response;
+    } catch (err: any) {
+      set({ error: err.body?.message || err.message });
+      return null;
     }
   },
 

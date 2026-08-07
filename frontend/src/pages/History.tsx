@@ -200,221 +200,281 @@ export const History: React.FC = () => {
         .history-stat-label { color: var(--text-muted); font-size: 0.84rem; }
 
         .history-log-card {
-          background: #fcf8f2;
-          border: 1px solid #ebd9c7;
-          border-radius: 24px;
-          box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
-          color: #192038;
+          background: rgba(24, 30, 56, 0.6);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 28px;
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+          color: #f3edd7;
           overflow: hidden;
         }
 
         .history-log-toolbar {
-          padding: 20px 24px;
+          padding: 22px 26px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          border-bottom: 1px solid #e9ddcf;
-          background: linear-gradient(180deg, #fffaf4, #faf3e9);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(0, 0, 0, 0.15);
         }
 
         .history-log-title {
           display: flex;
           align-items: center;
           gap: 10px;
-          font: 600 1.15rem var(--font-serif);
+          font: 600 1.25rem var(--font-serif);
         }
 
         .history-filter-group {
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 4px;
-          border-radius: 12px;
-          background: #eee5da;
+          gap: 8px;
+          padding: 6px;
+          border-radius: 16px;
+          background: rgba(0, 0, 0, 0.25);
+          box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
         }
 
         .history-filter-btn {
           border: 0;
-          border-radius: 9px;
-          padding: 7px 12px;
-          color: #6c6f7c;
+          border-radius: 12px;
+          padding: 8px 14px;
+          color: #8e9bb4;
           background: transparent;
           cursor: pointer;
-          font: 600 0.8rem var(--font-body);
-          transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+          font: 600 0.85rem var(--font-body);
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .history-filter-btn.active {
-          background: #fffdf9;
-          color: #353770;
-          box-shadow: 0 2px 8px rgba(65, 54, 45, 0.1);
+          background: rgba(129, 140, 248, 0.2);
+          color: #a5b4fc;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+          transform: translateY(-1px);
         }
 
         .history-error {
           margin: 18px 24px 0;
-          border-radius: 13px;
-          padding: 12px 14px;
+          border-radius: 16px;
+          padding: 14px 18px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          background: #fff0eb;
-          border: 1px solid #efc5b9;
-          color: #a33d2f;
-          font-size: 0.88rem;
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          color: #fca5a5;
+          font-size: 0.9rem;
         }
 
         .history-error button {
           border: 0;
-          background: transparent;
-          color: #743129;
+          background: rgba(239, 68, 68, 0.2);
+          padding: 6px 12px;
+          border-radius: 8px;
+          color: #fecaca;
           font-weight: 700;
           cursor: pointer;
+          transition: background 0.2s ease;
         }
 
-        .history-log-body { padding: 8px 24px 22px; }
+        .history-error button:hover {
+          background: rgba(239, 68, 68, 0.3);
+        }
+
+        .history-log-body { padding: 12px 26px 26px; }
         .history-month-group { padding-top: 16px; }
 
         .history-month-label {
           display: flex;
           align-items: center;
           gap: 8px;
-          margin: 0 0 9px 4px;
-          color: #7b7180;
-          font-size: 0.78rem;
+          margin: 0 0 12px 6px;
+          color: #8e9bb4;
+          font-size: 0.82rem;
           font-weight: 700;
-          letter-spacing: 0.055em;
+          letter-spacing: 0.06em;
           text-transform: uppercase;
         }
 
-        .history-records { display: flex; flex-direction: column; gap: 8px; }
+        .history-records { display: flex; flex-direction: column; gap: 12px; }
 
         .history-record {
-          min-height: 66px;
-          border: 1px solid #eadfd3;
-          background: rgba(255, 255, 255, 0.72);
-          border-radius: 15px;
-          padding: 12px 14px;
+          min-height: 72px;
+          background: rgba(30, 36, 66, 0.7);
+          border: 2px solid rgba(255, 255, 255, 0.05);
+          border-bottom-width: 4px;
+          border-radius: 20px;
+          padding: 14px 18px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 14px;
-          transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+          transition: all 0.15s ease;
+        }
+
+        .history-record.on-time {
+          border-color: rgba(88, 204, 2, 0.3);
+          border-bottom-color: rgba(88, 204, 2, 0.5);
+        }
+
+        .history-record.late {
+          border-color: rgba(255, 150, 0, 0.3);
+          border-bottom-color: rgba(255, 150, 0, 0.5);
         }
 
         .history-record:hover {
-          transform: translateY(-1px);
-          border-color: #d8c7b5;
-          box-shadow: 0 7px 18px rgba(84, 67, 51, 0.08);
+          transform: translateY(2px);
+          border-bottom-width: 2px;
+          margin-bottom: 2px;
+          background: rgba(36, 43, 76, 0.9);
         }
 
-        .history-date-block { display: flex; align-items: center; gap: 12px; }
+        .history-date-block { display: flex; align-items: center; gap: 14px; }
 
         .history-weekday {
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
+          width: 46px;
+          height: 46px;
+          border-radius: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #ece8fa;
-          color: #4b4d96;
-          font-size: 0.78rem;
+          background: rgba(255, 255, 255, 0.08);
+          color: #f3edd7;
+          font-size: 0.85rem;
           font-weight: 800;
           text-transform: uppercase;
+          box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05);
         }
 
-        .history-date-copy { display: flex; flex-direction: column; gap: 3px; }
-        .history-date-main { font-weight: 650; color: #192038; }
-        .history-date-caption { font-size: 0.78rem; color: #8b8290; }
-        .history-record-actions { display: flex; align-items: center; gap: 10px; }
+        .history-record.on-time .history-weekday {
+          background: rgba(88, 204, 2, 0.15);
+          color: #a7f3d0;
+        }
+
+        .history-record.late .history-weekday {
+          background: rgba(255, 150, 0, 0.15);
+          color: #fde68a;
+        }
+
+        .history-date-copy { display: flex; flex-direction: column; gap: 4px; }
+        .history-date-main { font-weight: 700; color: #f3edd7; font-size: 1.05rem; }
+        .history-date-caption { font-size: 0.8rem; color: #8e9bb4; font-weight: 500; }
+        .history-record-actions { display: flex; align-items: center; gap: 12px; }
 
         .history-status {
-          min-width: 90px;
+          min-width: 95px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 6px;
-          padding: 7px 10px;
-          border-radius: 999px;
-          font-size: 0.77rem;
-          font-weight: 750;
+          padding: 8px 12px;
+          border-radius: 12px;
+          font-size: 0.78rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
         }
 
-        .history-status.on-time { color: #31795e; background: #e1f1e9; }
-        .history-status.late { color: #9a6420; background: #f9edcf; }
+        .history-status.on-time { 
+          color: #fff; 
+          background: #58cc02; 
+          border-bottom: 3px solid #58a700;
+        }
+        .history-status.late { 
+          color: #fff; 
+          background: #ff9600; 
+          border-bottom: 3px solid #cc7800;
+        }
 
         .history-delete-btn {
-          width: 34px;
-          height: 34px;
+          width: 38px;
+          height: 38px;
           border: 0;
-          border-radius: 10px;
-          background: transparent;
-          color: #9b9096;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.05);
+          color: #8e9bb4;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: color 0.18s ease, background 0.18s ease;
+          transition: all 0.2s ease;
         }
 
-        .history-delete-btn:hover { color: #bd4f40; background: #fae9e4; }
-        .history-delete-btn:disabled { opacity: 0.45; cursor: wait; }
+        .history-delete-btn:hover { 
+          color: #fca5a5; 
+          background: rgba(239, 68, 68, 0.2); 
+          transform: scale(1.05);
+        }
+        .history-delete-btn:disabled { opacity: 0.45; cursor: wait; transform: none; }
 
         .history-confirm {
           display: flex;
           align-items: center;
-          gap: 6px;
-          color: #8a443a;
-          font-size: 0.78rem;
-          font-weight: 650;
+          gap: 8px;
+          color: #fca5a5;
+          font-size: 0.85rem;
+          font-weight: 700;
         }
 
         .history-confirm button {
           border: 0;
-          border-radius: 8px;
-          padding: 6px 8px;
+          border-radius: 10px;
+          padding: 8px 12px;
           cursor: pointer;
-          font: 700 0.74rem var(--font-body);
+          font: 700 0.8rem var(--font-body);
+          transition: transform 0.1s ease;
         }
 
-        .history-confirm-delete { background: #bd5344; color: white; }
-        .history-confirm-cancel { background: #ece5de; color: #5e5960; }
+        .history-confirm button:active {
+          transform: scale(0.95);
+        }
+
+        .history-confirm-delete { 
+          background: #ef4444; 
+          color: white; 
+          border-bottom: 3px solid #b91c1c;
+        }
+        .history-confirm-cancel { 
+          background: rgba(255, 255, 255, 0.1); 
+          color: #f3edd7; 
+        }
 
         .history-empty {
-          min-height: 230px;
+          min-height: 260px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           text-align: center;
-          color: #756d79;
-          padding: 36px 20px;
+          color: #8e9bb4;
+          padding: 40px 20px;
         }
 
         .history-empty-icon {
-          width: 62px;
-          height: 62px;
+          width: 72px;
+          height: 72px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 20px;
-          color: #5b5ea6;
-          background: #ebe8f8;
-          margin-bottom: 14px;
+          border-radius: 24px;
+          color: #818cf8;
+          background: rgba(129, 140, 248, 0.15);
+          margin-bottom: 18px;
+          box-shadow: inset 0 2px 10px rgba(129, 140, 248, 0.1);
         }
 
-        .history-empty h2 { font-size: 1.15rem; margin-bottom: 6px; color: #2e314b; }
-        .history-empty p { font-size: 0.88rem; max-width: 340px; line-height: 1.5; }
+        .history-empty h2 { font-size: 1.25rem; margin-bottom: 8px; color: #f3edd7; }
+        .history-empty p { font-size: 0.95rem; max-width: 340px; line-height: 1.6; }
 
-        .history-skeleton-list { padding: 20px 24px 24px; display: grid; gap: 10px; }
+        .history-skeleton-list { padding: 24px 26px; display: grid; gap: 12px; }
         .history-skeleton {
-          height: 66px;
-          border-radius: 15px;
-          background: linear-gradient(90deg, #eee6dc 25%, #f9f4ee 50%, #eee6dc 75%);
+          height: 72px;
+          border-radius: 20px;
+          background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
           background-size: 200% 100%;
-          animation: history-shimmer 1.35s infinite linear;
+          animation: history-shimmer 1.5s infinite linear;
         }
         @keyframes history-shimmer { to { background-position: -200% 0; } }
 
@@ -544,7 +604,7 @@ export const History: React.FC = () => {
                     const isOnTime = item.status === 'onTime';
 
                     return (
-                      <article className="history-record" key={item.id}>
+                      <article className={`history-record ${isOnTime ? 'on-time' : 'late'}`} key={item.id}>
                         <div className="history-date-block">
                           <div className="history-weekday">
                             {typeof formatted === 'string' ? '—' : formatted.weekday}

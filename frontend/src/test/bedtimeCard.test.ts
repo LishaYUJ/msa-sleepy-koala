@@ -205,4 +205,10 @@ describe('shouldShowSleepingInBedAnimation', () => {
     expect(shouldShowSleepingInBedAnimation(at(8), true)).toBe(false);
     expect(shouldShowSleepingInBedAnimation(at(23), false)).toBe(false);
   });
+
+  it('keeps a missed koala in the sleeping scene until 8 AM', () => {
+    expect(shouldShowSleepingInBedAnimation(at(3), false, 'missing')).toBe(true);
+    expect(shouldShowSleepingInBedAnimation(at(7, 59), false, 'missing')).toBe(true);
+    expect(shouldShowSleepingInBedAnimation(at(8), false, 'missing')).toBe(false);
+  });
 });
