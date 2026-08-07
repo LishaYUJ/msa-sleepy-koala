@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatRemainingTime,
+  isCheckInWindowOpen,
   resolveBedtimeCardState,
+  resolveDashboardCopy,
   shouldShowAwakeInBedAnimation,
   shouldShowEnjoyingLifeAnimation,
   shouldShowSleepingInBedAnimation,
@@ -52,6 +54,67 @@ describe('resolveBedtimeCardState', () => {
   it('formats remaining time in compact English', () => {
     expect(formatRemainingTime(135)).toBe('2h 15m');
     expect(formatRemainingTime(45)).toBe('45m');
+  });
+});
+
+describe('resolveDashboardCopy', () => {
+  it('uses shared daytime copy and the real nickname', () => {
+    const morning = resolveDashboardCopy(at(9), '00:00', false, null, 'healthy', 'Lisa');
+    const afternoon = resolveDashboardCopy(at(15), '00:00', false, null, 'healthy', 'Lisa');
+
+    expect(morning.greeting).toBe('Good morning, Lisa ☀️');
+    expect(afternoon.greeting).toBe('Good afternoon, Lisa 🌿');
+    expect(morning.subtitle).toBe('Koala is enjoying the day, one leaf at a time.');
+    expect(afternoon.subtitle).toBe(morning.subtitle);
+    expect(morning.actionText).toBe('Check-in opens at 9:00 PM.');
+  });
+
+  it('uses fatigue copy before the check-in window', () => {
+    expect(resolveDashboardCopy(at(14), '00:00', false, null, 'weak', 'Lisa').subtitle)
+      .toBe('Koala is feeling a little tired today.');
+    expect(resolveDashboardCopy(at(19), '00:00', false, null, 'veryWeak', 'Lisa').subtitle)
+      .toBe('Koala is exhausted and could use an earlier night.');
+  });
+
+  it('uses one slide instruction throughout the open unchecked window', () => {
+    expect(resolveDashboardCopy(at(21), '00:00', false, null, 'healthy', 'Lisa').actionText)
+      .toBe('Slide to tuck Koala in for tonight.');
+    expect(resolveDashboardCopy(at(23, 30), '00:00', false, null, 'healthy', 'Lisa').actionText)
+      .toBe('Slide to tuck Koala in for tonight.');
+    expect(resolveDashboardCopy(at(1), '00:00', false, null, 'healthy', 'Lisa').actionText)
+      .toBe('Slide to tuck Koala in for tonight.');
+  });
+
+  it('uses the same greeting for on-time, late, and missing outcomes', () => {
+    const onTime = resolveDashboardCopy(at(23), '00:00', true, 'onTime', 'healthy', 'Lisa');
+    const late = resolveDashboardCopy(at(1), '00:00', true, 'late', 'healthy', 'Lisa');
+    const missing = resolveDashboardCopy(at(3), '00:00', false, 'missing', 'healthy', 'Lisa');
+
+    expect(onTime.greeting).toBe('Good night, Lisa 💜');
+    expect(late.greeting).toBe(onTime.greeting);
+    expect(missing.greeting).toBe(onTime.greeting);
+    expect(missing.subtitle).toBe('Koala missed some rest and is taking it slow.');
+    expect(missing.actionText).toBe('Your next check-in opens at 9:00 PM.');
+    expect(`${missing.subtitle} ${missing.actionText}`.toLowerCase()).not.toContain('tonight');
+  });
+
+  it('stops the previous night outcome from overriding daytime and evening copy', () => {
+    const morningAfterCheckIn = resolveDashboardCopy(at(8), '00:00', true, 'onTime', 'healthy', 'Lisa');
+    const eveningAfterLate = resolveDashboardCopy(at(19, 30), '00:00', true, 'late', 'healthy', 'Lisa');
+    const eveningAfterMissing = resolveDashboardCopy(at(19, 30), '00:00', false, 'missing', 'healthy', 'Lisa');
+
+    expect(morningAfterCheckIn.greeting).toBe('Good morning, Lisa ☀️');
+    expect(eveningAfterLate.greeting).toBe('Good evening, Lisa ✨');
+    expect(eveningAfterMissing.greeting).toBe('Good evening, Lisa ✨');
+    expect(eveningAfterLate.subtitle).toBe('The day is slowing down. Bedtime is getting closer.');
+    expect(eveningAfterLate.actionText).toBe('Check-in opens at 9:00 PM.');
+  });
+
+  it('opens check-in only between 9 PM and 2 AM inclusive', () => {
+    expect(isCheckInWindowOpen(at(20, 59))).toBe(false);
+    expect(isCheckInWindowOpen(at(21))).toBe(true);
+    expect(isCheckInWindowOpen(at(2))).toBe(true);
+    expect(isCheckInWindowOpen(at(2, 1))).toBe(false);
   });
 });
 

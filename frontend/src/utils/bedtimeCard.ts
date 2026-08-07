@@ -7,6 +7,12 @@ export interface BedtimeCardState {
   progressPercent: number;
 }
 
+export interface DashboardCopy {
+  greeting: string;
+  subtitle: string;
+  actionText: string;
+}
+
 const CHECK_IN_START_MINUTES = 21 * 60;
 const CHECK_IN_END_MINUTES = 2 * 60;
 
@@ -14,6 +20,124 @@ const parseCutoffMinutes = (cutoffTime?: string) => {
   const [hours, minutes] = (cutoffTime || '23:30').split(':').map(Number);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return 23 * 60 + 30;
   return hours * 60 + minutes;
+};
+
+export const isCheckInWindowOpen = (now: Date) => {
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return nowMinutes >= CHECK_IN_START_MINUTES || nowMinutes <= CHECK_IN_END_MINUTES;
+};
+
+export const resolveDashboardCopy = (
+  now: Date,
+  cutoffTime: string | undefined,
+  todayCheckedIn: boolean,
+  todayStatus: string | null | undefined,
+  fatigueState: 'healthy' | 'weak' | 'veryWeak' | undefined,
+  nickname: string | null | undefined,
+): DashboardCopy => {
+  const name = nickname?.trim() || 'Koala';
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const isNightOutcomeWindow = nowMinutes >= CHECK_IN_START_MINUTES || nowMinutes < 8 * 60;
+
+  if (isNightOutcomeWindow && todayCheckedIn) {
+    if (todayStatus === 'late') {
+      return {
+        greeting: `Good night, ${name} 💜`,
+        subtitle: 'Koala is finally tucked in for some well-earned rest.',
+        actionText: 'Late check-in recorded. Tomorrow is a fresh start.',
+      };
+    }
+
+    return {
+      greeting: `Good night, ${name} 💜`,
+      subtitle: 'Koala is sleeping soundly.',
+      actionText: 'Bedtime check-in recorded. Right on time.',
+    };
+  }
+
+  if (isNightOutcomeWindow && todayStatus === 'missing') {
+    return {
+      greeting: `Good night, ${name} 💜`,
+      subtitle: 'Koala missed some rest and is taking it slow.',
+      actionText: 'Your next check-in opens at 9:00 PM.',
+    };
+  }
+
+  const cutoffMinutes = parseCutoffMinutes(cutoffTime);
+  const windDownStartMinutes = cutoffMinutes === 0
+    ? 23 * 60 + 30
+    : cutoffMinutes - 30;
+  const inCheckInWindow = isCheckInWindowOpen(now);
+
+  if (inCheckInWindow) {
+    const isAfterBedtime = cutoffMinutes === 0
+      ? nowMinutes > 0 && nowMinutes <= CHECK_IN_END_MINUTES
+      : nowMinutes >= CHECK_IN_START_MINUTES
+        ? nowMinutes > cutoffMinutes
+        : nowMinutes <= CHECK_IN_END_MINUTES;
+
+    if (isAfterBedtime) {
+      return {
+        greeting: `Still awake, ${name}?`,
+        subtitle: 'It is past your bedtime, but you can still check in.',
+        actionText: 'Slide to tuck Koala in for tonight.',
+      };
+    }
+
+    if (nowMinutes >= windDownStartMinutes || (cutoffMinutes === 0 && nowMinutes === 0)) {
+      return {
+        greeting: `Almost bedtime, ${name} 🌙`,
+        subtitle: 'Koala is cozy in bed and waiting for you.',
+        actionText: 'Slide to tuck Koala in for tonight.',
+      };
+    }
+
+    return {
+      greeting: `Bedtime check-in is open, ${name} 🌙`,
+      subtitle: 'Check in whenever you are ready to wind down.',
+      actionText: 'Slide to tuck Koala in for tonight.',
+    };
+  }
+
+  const daytimeSubtitle = fatigueState === 'veryWeak'
+    ? 'Koala is exhausted and could use an earlier night.'
+    : fatigueState === 'weak'
+      ? 'Koala is feeling a little tired today.'
+      : 'Koala is enjoying the day, one leaf at a time.';
+
+  if (nowMinutes >= 8 * 60 && nowMinutes < 12 * 60) {
+    return {
+      greeting: `Good morning, ${name} ☀️`,
+      subtitle: daytimeSubtitle,
+      actionText: 'Check-in opens at 9:00 PM.',
+    };
+  }
+
+  if (nowMinutes >= 12 * 60 && nowMinutes < 18 * 60) {
+    return {
+      greeting: `Good afternoon, ${name} 🌿`,
+      subtitle: daytimeSubtitle,
+      actionText: 'Check-in opens at 9:00 PM.',
+    };
+  }
+
+  if (nowMinutes >= 18 * 60 && nowMinutes < CHECK_IN_START_MINUTES) {
+    return {
+      greeting: `Good evening, ${name} ✨`,
+      subtitle: fatigueState === 'veryWeak'
+        ? 'Koala is exhausted and could use an earlier night.'
+        : fatigueState === 'weak'
+          ? 'Koala is feeling a little tired today.'
+          : 'The day is slowing down. Bedtime is getting closer.',
+      actionText: 'Check-in opens at 9:00 PM.',
+    };
+  }
+
+  return {
+    greeting: `Good night, ${name} 💜`,
+    subtitle: 'Koala is resting quietly.',
+    actionText: 'Check-in opens at 9:00 PM.',
+  };
 };
 
 const isDaytimeKoalaWindow = (now: Date, cutoffTime?: string) => {

@@ -4,6 +4,8 @@ import { useStore, getCurrentSleepDateString, getLocalDateString } from '../stor
 import { Sparkles, Moon, Check, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, ChevronLeft } from 'lucide-react';
 import {
   formatRemainingTime,
+  isCheckInWindowOpen,
+  resolveDashboardCopy,
   resolveBedtimeCardState,
   shouldShowAwakeInBedAnimation,
   shouldShowEnjoyingLifeAnimation,
@@ -82,20 +84,23 @@ export const Dashboard: React.FC = () => {
     || previewVeryWeakEating
     || previewAwakeInBed
     || previewSleepingInBed;
+  // Keep the real daytime animation visible while the summary request is loading
+  // or temporarily unavailable instead of flashing the legacy placeholder asset.
+  const effectiveFatigueState = summary?.fatigueState ?? 'healthy';
   const showEnjoyingLifeAnimation = !hasKoalaPreview && shouldShowEnjoyingLifeAnimation(
     currentTime,
     summary?.cutoffTime,
-    summary?.fatigueState,
+    effectiveFatigueState,
   );
   const showWeakEatingAnimation = previewWeakEating || (!hasKoalaPreview && shouldShowWeakEatingAnimation(
     currentTime,
     summary?.cutoffTime,
-    summary?.fatigueState,
+    effectiveFatigueState,
   ));
   const showVeryWeakEatingAnimation = previewVeryWeakEating || (!hasKoalaPreview && shouldShowVeryWeakEatingAnimation(
     currentTime,
     summary?.cutoffTime,
-    summary?.fatigueState,
+    effectiveFatigueState,
   ));
   const showAwakeInBedAnimation = previewAwakeInBed || (!hasKoalaPreview && shouldShowAwakeInBedAnimation(
     currentTime,
@@ -108,7 +113,22 @@ export const Dashboard: React.FC = () => {
     summary?.todayCheckedIn ?? false,
   ));
   const isInBedAnimation = showAwakeInBedAnimation || showSleepingInBedAnimation;
-  const showRecordedCheckIn = previewSleepingInBed || (summary?.todayCheckedIn ?? false);
+  const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+  const isNightOutcomeWindow = currentMinutes >= 21 * 60 || currentMinutes < 8 * 60;
+  const showRecordedCheckIn = previewSleepingInBed
+    || (isNightOutcomeWindow && (summary?.todayCheckedIn ?? false));
+  const effectiveCheckInStatus = previewSleepingInBed
+    ? (summary?.todayStatus || 'onTime')
+    : summary?.todayStatus;
+  const dashboardCopy = resolveDashboardCopy(
+    currentTime,
+    summary?.cutoffTime,
+    showRecordedCheckIn,
+    effectiveCheckInStatus,
+    effectiveFatigueState,
+    nickname,
+  );
+  const canCheckInNow = isCheckInWindowOpen(currentTime) && summary?.todayStatus !== 'missing';
   // Keep every non-bed koala state visually consistent: normal, happy, weak, and very weak.
   const useCompactKoalaStage = !isInBedAnimation;
   const koalaImage = showSleepingInBedAnimation
@@ -394,6 +414,32 @@ export const Dashboard: React.FC = () => {
         .checked-sleep-note svg {
           flex: none;
           color: #89d5b5;
+        }
+
+        .checkin-availability-note {
+          position: relative;
+          z-index: 4;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-top: -22px;
+          padding: 9px 16px;
+          border: 1px solid rgba(196, 181, 253, 0.24);
+          border-radius: 999px;
+          color: #d8d0e6;
+          background: rgba(30, 27, 75, 0.42);
+          backdrop-filter: blur(8px);
+          font-family: var(--font-body);
+          font-size: 0.9rem;
+          font-weight: 500;
+          text-align: center;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+        }
+
+        .checkin-availability-note svg {
+          flex: none;
+          color: #b19df7;
         }
 
         @keyframes float-pet {
@@ -807,39 +853,65 @@ export const Dashboard: React.FC = () => {
           gap: 20px;
         }
         .week-days-timeline {
+          --week-node-size: 34px;
+          --week-column-width: 52px;
+          --week-column-gap: 32px;
+          --week-label-height: 20px;
+          --week-row-gap: 10px;
           display: flex;
           align-items: center;
-          gap: 32px;
+          gap: var(--week-column-gap);
           position: relative;
           z-index: 2;
-        }
-        .week-days-timeline::before {
-          content: '';
-          position: absolute;
-          top: 42px; /* Centers the dashed line directly in the middle of circles */
-          left: 20px;
-          right: 20px;
-          height: 2px;
-          border-top: 2px dashed rgba(255,255,255,0.15);
-          z-index: 1;
         }
         .day-node-column {
           display: flex;
+          width: var(--week-column-width);
+          flex: 0 0 var(--week-column-width);
           flex-direction: column;
           align-items: center;
-          gap: 10px;
+          gap: var(--week-row-gap);
           position: relative;
           z-index: 2;
+        }
+        .day-node-column:not(:first-child)::before {
+          content: '';
+          position: absolute;
+          top: calc(
+            var(--week-label-height) +
+            var(--week-row-gap) +
+            (var(--week-node-size) / 2) - 1px
+          );
+          left: calc(
+            -1 * var(--week-column-gap) -
+            ((var(--week-column-width) - var(--week-node-size)) / 2)
+          );
+          width: calc(
+            var(--week-column-gap) +
+            var(--week-column-width) -
+            var(--week-node-size)
+          );
+          height: 2px;
+          background: repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.18) 0 5px,
+            transparent 5px 9px
+          );
+          pointer-events: none;
         }
         .day-label-text {
           font-family: var(--font-body);
           font-size: 0.9rem;
           font-weight: 600;
+          line-height: var(--week-label-height);
           color: #aeb9cc;
         }
         .day-node-circle {
-          width: 34px;
-          height: 34px;
+          position: relative;
+          z-index: 1;
+          width: var(--week-node-size);
+          height: var(--week-node-size);
+          flex: 0 0 var(--week-node-size);
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -974,10 +1046,10 @@ export const Dashboard: React.FC = () => {
           <div className="pet-sanctuary-container">
             {/* Greeting */}
             <div className="greeting-text" style={{ fontFamily: 'var(--font-serif)', fontSize: '2.2rem', color: '#f3edd7', marginBottom: '8px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
-              Good night, Lisa <span style={{ color: '#a78bfa', textShadow: 'none' }}>❤</span>
+              {dashboardCopy.greeting}
             </div>
             <div className="greeting-subtext" style={{ fontFamily: 'var(--font-body)', fontSize: '1.05rem', color: '#aeb9cc', marginBottom: '16px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
-              Let's help Koala get the best sleep
+              {dashboardCopy.subtitle}
             </div>
             
             <div className="bedtime-goal-pill" style={{ 
@@ -1016,15 +1088,15 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <div className="checked-sleep-note">
                   <CheckCircle size={17} />
-                  <span>Bedtime check-in recorded. Sweet dreams, {nickname || 'Koala'}.</span>
+                  <span>{dashboardCopy.actionText}</span>
                 </div>
               </div>
-            ) : (
+            ) : canCheckInNow ? (
               <div className="slider-wrapper" style={{ position: 'relative', zIndex: 4, width: '380px', maxWidth: '90vw', height: '72px', marginTop: '-36px', background: 'rgba(30, 27, 75, 0.6)', border: '1.5px solid rgba(167, 139, 250, 0.3)', borderRadius: '99px', overflow: 'hidden' }}>
                 
                 <div className="slider-text" style={{ position: 'absolute', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', color: '#b19df7', fontSize: '1.15rem', gap: '12px', opacity: 1 - (slideVal / 100), fontFamily: 'var(--font-body)', fontWeight: 500 }}>
                    <span style={{ letterSpacing: '4px', opacity: 0.5 }}>········</span>
-                   Slide to tuck Koala in
+                   {dashboardCopy.actionText}
                 </div>
                 
                 <div className="slider-thumb" style={{ position: 'absolute', top: '5px', left: `calc(6px + ${slideVal}% - ${slideVal * 0.72}px)`, width: '60px', height: '60px', background: '#ffe4a0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(255, 228, 160, 0.4)', pointerEvents: 'none', zIndex: 5 }}>
@@ -1041,6 +1113,11 @@ export const Dashboard: React.FC = () => {
                   disabled={isLoading}
                   style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, zIndex: 10, cursor: 'grab' }}
                 />
+              </div>
+            ) : (
+              <div className="checkin-availability-note" aria-live="polite">
+                <Moon size={17} />
+                <span>{dashboardCopy.actionText}</span>
               </div>
             )}
             {error && <div style={{ color: '#f87171', marginTop: '12px' }}>{error}</div>}

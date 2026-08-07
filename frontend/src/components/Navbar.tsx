@@ -56,7 +56,6 @@ export const Navbar: React.FC = () => {
           font-weight: 600;
           color: #f3edd7;
           letter-spacing: 0.02em;
-          text-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.6);
         }
 
         .nav-center-menu {
