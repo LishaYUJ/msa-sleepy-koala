@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './stores/useStore';
 import { Navbar } from './components/Navbar';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
 import { Leaderboard } from './pages/Leaderboard';
@@ -38,6 +39,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
       <main className="main-wrapper">
         {children}
       </main>
+      <MobileBottomNav />
     </div>
   );
 };

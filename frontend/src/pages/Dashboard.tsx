@@ -23,7 +23,7 @@ import koalaWeakEating from '../assets/koala_weak_eating.png';
 import nighttimeRoomBg from '../assets/nighttime_room_bg.png';
 
 export const Dashboard: React.FC = () => {
-  const { summary, loadSummary, performCheckIn, isLoading, error, history, loadHistory, nickname } = useStore();
+  const { summary, loadSummary, performCheckIn, isLoading, error, history, loadHistory, nickname, badges, loadBadges } = useStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -43,7 +43,8 @@ export const Dashboard: React.FC = () => {
     const sleepDate = getCurrentSleepDateString();
     loadSummary(sleepDate);
     loadHistory();
-  }, [loadSummary, loadHistory]);
+    loadBadges();
+  }, [loadSummary, loadHistory, loadBadges]);
 
   // Update current time periodically
   useEffect(() => {
@@ -1044,82 +1045,190 @@ export const Dashboard: React.FC = () => {
             ========================================= */}
         <div className="view-panel">
           <div className="pet-sanctuary-container">
-            {/* Greeting */}
-            <div className="greeting-text" style={{ fontFamily: 'var(--font-serif)', fontSize: '2.2rem', color: '#f3edd7', marginBottom: '8px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
-              {dashboardCopy.greeting}
-            </div>
-            <div className="greeting-subtext" style={{ fontFamily: 'var(--font-body)', fontSize: '1.05rem', color: '#aeb9cc', marginBottom: '16px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
-              {dashboardCopy.subtitle}
-            </div>
-            
-            <div className="bedtime-goal-pill" style={{ 
-               display: 'inline-flex', alignItems: 'center', gap: '8px', 
-               padding: '8px 16px', background: 'rgba(255,255,255,0.05)', 
-               border: '1px solid rgba(255,255,255,0.1)', borderRadius: '99px',
-               color: '#e2e8f0', fontSize: '0.9rem', marginBottom: '12px' 
-            }}>
-              <Moon size={16} color="#a78bfa" />
-              <span>Bedtime goal: {formatCutoff12h(summary?.cutoffTime)}</span>
-            </div>
 
-            {/* The Isolated Koala Asset */}
-            <div className={`pet-sprite-stage${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}>
-              <img 
-                src={koalaImage}
-                alt={koalaAlt}
-                className={`pet-sprite-image${isInBedAnimation ? ' in-bed' : ''}`}
-              />
-            </div>
-
-            {/* The primary action replacing countdowns on this screen */}
-            {showRecordedCheckIn ? (
-              <div className="checked-sleep-state">
-                <div className="checked-sleep-control" aria-label="Bedtime check-in recorded">
-                  <div className="checked-sleep-moon" aria-hidden="true">
-                    <Moon size={25} />
-                  </div>
-                  <div className="checked-sleep-copy">
-                    <span className="checked-sleep-dots" aria-hidden="true">••••••••••••••</span>
-                    <span className="checked-sleep-label">Checked in for tonight</span>
-                  </div>
-                  <div className="checked-sleep-check" aria-hidden="true">
-                    <Check size={30} strokeWidth={2.8} />
-                  </div>
-                </div>
-                <div className="checked-sleep-note">
-                  <CheckCircle size={17} />
-                  <span>{dashboardCopy.actionText}</span>
-                </div>
+            {/* --- DESKTOP SANCTUARY LAYOUT (> 768px) --- */}
+            <div className="desktop-sanctuary-layout">
+              {/* Greeting */}
+              <div className="greeting-text" style={{ fontFamily: 'var(--font-serif)', fontSize: '2.2rem', color: '#f3edd7', marginBottom: '8px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+                {dashboardCopy.greeting}
               </div>
-            ) : canCheckInNow ? (
-              <div className="slider-wrapper" style={{ position: 'relative', zIndex: 4, width: '380px', maxWidth: '90vw', height: '72px', marginTop: '-36px', background: 'rgba(30, 27, 75, 0.6)', border: '1.5px solid rgba(167, 139, 250, 0.3)', borderRadius: '99px', overflow: 'hidden' }}>
-                
-                <div className="slider-text" style={{ position: 'absolute', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', color: '#b19df7', fontSize: '1.15rem', gap: '12px', opacity: 1 - (slideVal / 100), fontFamily: 'var(--font-body)', fontWeight: 500 }}>
-                   <span style={{ letterSpacing: '4px', opacity: 0.5 }}>········</span>
-                   {dashboardCopy.actionText}
-                </div>
-                
-                <div className="slider-thumb" style={{ position: 'absolute', top: '5px', left: `calc(6px + ${slideVal}% - ${slideVal * 0.72}px)`, width: '60px', height: '60px', background: '#ffe4a0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(255, 228, 160, 0.4)', pointerEvents: 'none', zIndex: 5 }}>
-                   <Moon size={28} color="#9061f9" />
-                </div>
+              <div className="greeting-subtext" style={{ fontFamily: 'var(--font-body)', fontSize: '1.05rem', color: '#aeb9cc', marginBottom: '16px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+                {dashboardCopy.subtitle}
+              </div>
+              
+              <div className="bedtime-goal-pill" style={{ 
+                 display: 'inline-flex', alignItems: 'center', gap: '8px', 
+                 padding: '8px 16px', background: 'rgba(255,255,255,0.05)', 
+                 border: '1px solid rgba(255,255,255,0.1)', borderRadius: '99px',
+                 color: '#e2e8f0', fontSize: '0.9rem', marginBottom: '12px' 
+              }}>
+                <Moon size={16} color="#a78bfa" />
+                <span>Bedtime goal: {formatCutoff12h(summary?.cutoffTime)}</span>
+              </div>
 
-                <input 
-                  type="range"
-                  min="0" max="100"
-                  value={slideVal}
-                  onChange={(e) => setSlideVal(Number(e.target.value))}
-                  onMouseUp={() => { if (slideVal > 90 && !isLoading) { handleCheckIn(); } setSlideVal(0); }}
-                  onTouchEnd={() => { if (slideVal > 90 && !isLoading) { handleCheckIn(); } setSlideVal(0); }}
-                  disabled={isLoading}
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, zIndex: 10, cursor: 'grab' }}
+              {/* The Isolated Koala Asset */}
+              <div className={`pet-sprite-stage${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}>
+                <img 
+                  src={koalaImage}
+                  alt={koalaAlt}
+                  className={`pet-sprite-image${isInBedAnimation ? ' in-bed' : ''}`}
                 />
               </div>
-            ) : (
-              <div className="checkin-availability-note" aria-live="polite">
-                <Moon size={17} />
-                <span>{dashboardCopy.actionText}</span>
+
+              {/* Desktop Slider Check-In Wrapper */}
+              {showRecordedCheckIn ? (
+                <div className="checked-sleep-state">
+                  <div className="checked-sleep-control" aria-label="Bedtime check-in recorded">
+                    <div className="checked-sleep-moon" aria-hidden="true">
+                      <Moon size={25} />
+                    </div>
+                    <div className="checked-sleep-copy">
+                      <span className="checked-sleep-dots" aria-hidden="true">••••••••••••••</span>
+                      <span className="checked-sleep-label">Checked in for tonight</span>
+                    </div>
+                    <div className="checked-sleep-check" aria-hidden="true">
+                      <Check size={30} strokeWidth={2.8} />
+                    </div>
+                  </div>
+                  <div className="checked-sleep-note">
+                    <CheckCircle size={17} />
+                    <span>{dashboardCopy.actionText}</span>
+                  </div>
+                </div>
+              ) : canCheckInNow ? (
+                <div className="slider-wrapper" style={{ position: 'relative', zIndex: 4, width: '380px', maxWidth: '90vw', height: '72px', marginTop: '-36px', background: 'rgba(30, 27, 75, 0.6)', border: '1.5px solid rgba(167, 139, 250, 0.3)', borderRadius: '99px', overflow: 'hidden' }}>
+                  <div className="slider-text" style={{ position: 'absolute', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', color: '#b19df7', fontSize: '1.15rem', gap: '12px', opacity: 1 - (slideVal / 100), fontFamily: 'var(--font-body)', fontWeight: 500 }}>
+                     <span style={{ letterSpacing: '4px', opacity: 0.5 }}>········</span>
+                     {dashboardCopy.actionText}
+                  </div>
+                  
+                  <div className="slider-thumb" style={{ position: 'absolute', top: '5px', left: `calc(6px + ${slideVal}% - ${slideVal * 0.72}px)`, width: '60px', height: '60px', background: '#ffe4a0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(255, 228, 160, 0.4)', pointerEvents: 'none', zIndex: 5 }}>
+                     <Moon size={28} color="#9061f9" />
+                  </div>
+
+                  <input 
+                    type="range"
+                    min="0" max="100"
+                    value={slideVal}
+                    onChange={(e) => setSlideVal(Number(e.target.value))}
+                    onMouseUp={() => { if (slideVal > 90 && !isLoading) { handleCheckIn(); } setSlideVal(0); }}
+                    onTouchEnd={() => { if (slideVal > 90 && !isLoading) { handleCheckIn(); } setSlideVal(0); }}
+                    disabled={isLoading}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, zIndex: 10, cursor: 'grab' }}
+                  />
+                </div>
+              ) : (
+                <div className="checkin-availability-note" aria-live="polite">
+                  <Moon size={17} />
+                  <span>{dashboardCopy.actionText}</span>
+                </div>
+              )}
+            </div>
+
+            {/* --- MOBILE DEDICATED SANCTUARY LAYOUT (<= 768px) --- */}
+            <div className="mobile-sanctuary-layout">
+              {/* Option 1 Floating Eucalyptus Leaves Background */}
+              <div className="dreamscape-decorations" aria-hidden="true">
+                <div className="eucalyptus-leaf" style={{ top: '12%', left: '6%', animationDelay: '0s' }}>🌿</div>
+                <div className="eucalyptus-leaf" style={{ top: '18%', right: '10%', animationDelay: '3.5s' }}>🍃</div>
+                <div className="eucalyptus-leaf" style={{ top: '45%', left: '88%', animationDelay: '7s' }}>🌿</div>
               </div>
-            )}
+
+              {/* Top-Left Badges Showcase (Icon-only badges display) */}
+              <div 
+                className="mobile-top-badges-container"
+                onClick={() => navigate('/badges')}
+                title="View Badges Museum"
+                style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 30 }}
+              >
+                <div className="badge-icons-row">
+                  {badges?.unlocked && badges.unlocked.length > 0 ? (
+                    badges.unlocked.slice(0, 3).map((_, i) => (
+                      <div key={i} className="badge-mini-shield">🏆</div>
+                    ))
+                  ) : (
+                    <div className="badge-mini-shield">🎖️</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Top Slogan Speech Bubble */}
+              <div className="duo-speech-bubble" style={{ marginBottom: '12px', maxWidth: '340px', width: '90vw' }}>
+                <span>✨ {dashboardCopy.subtitle || 'Your koala is feeling great! Sleep on time to stay fresh~'}</span>
+              </div>
+
+              {/* Bedtime Goal Pill */}
+              <div className="bedtime-goal-pill" style={{ 
+                 display: 'inline-flex', alignItems: 'center', gap: '8px', 
+                 padding: '6px 14px', background: 'rgba(255,255,255,0.06)', 
+                 border: '1px solid rgba(255,255,255,0.12)', borderRadius: '99px',
+                 color: '#e2e8f0', fontSize: '0.88rem', marginBottom: '10px' 
+              }}>
+                <Moon size={15} color="#a78bfa" />
+                <span>Bedtime goal: {formatCutoff12h(summary?.cutoffTime)}</span>
+              </div>
+
+              {/* The Center Isolated Koala Asset */}
+              <div className={`pet-sprite-stage${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}>
+                <img 
+                  src={koalaImage}
+                  alt={koalaAlt}
+                  className={`pet-sprite-image${isInBedAnimation ? ' in-bed' : ''}`}
+                />
+              </div>
+
+              {/* Bottom Slogan Banner */}
+              <div className="bottom-slogan-banner" style={{ 
+                margin: '8px 0 14px', 
+                color: '#d8d0e6', 
+                fontSize: '0.95rem', 
+                fontWeight: 600,
+                textAlign: 'center',
+                textShadow: '0 2px 8px rgba(0,0,0,0.65)'
+              }}>
+                <span>🌙 {dashboardCopy.greeting || 'Check in on time tonight to keep your sleep streak!'}</span>
+              </div>
+
+              {/* Themed 3D Primary Check-in CTA Button matching site palette */}
+              {showRecordedCheckIn ? (
+                <div className="checked-sleep-state">
+                  <div className="checked-sleep-control" aria-label="Bedtime check-in recorded">
+                    <div className="checked-sleep-moon" aria-hidden="true">
+                      <Moon size={25} />
+                    </div>
+                    <div className="checked-sleep-copy">
+                      <span className="checked-sleep-dots" aria-hidden="true">••••••••••••••</span>
+                      <span className="checked-sleep-label">Tonight Checked In</span>
+                    </div>
+                    <div className="checked-sleep-check" aria-hidden="true">
+                      <Check size={30} strokeWidth={2.8} />
+                    </div>
+                  </div>
+                  <div className="checked-sleep-note">
+                    <CheckCircle size={17} />
+                    <span>{dashboardCopy.actionText}</span>
+                  </div>
+                </div>
+              ) : canCheckInNow ? (
+                <div style={{ width: '340px', maxWidth: '90vw', marginTop: '-10px' }}>
+                  <button 
+                    type="button" 
+                    className="duo-btn duo-btn-theme"
+                    onClick={handleCheckIn}
+                    disabled={isLoading}
+                  >
+                    <Moon size={20} />
+                    <span>{isLoading ? 'Checking in...' : '🌙 Check In Now'}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="checkin-availability-note" aria-live="polite">
+                  <Moon size={17} />
+                  <span>{dashboardCopy.actionText}</span>
+                </div>
+              )}
+            </div>
+
             {error && <div style={{ color: '#f87171', marginTop: '12px' }}>{error}</div>}
           </div>
         </div>
