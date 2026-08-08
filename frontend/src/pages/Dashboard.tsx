@@ -38,6 +38,17 @@ export const Dashboard: React.FC = () => {
   const [slideVal, setSlideVal] = useState(0);
   const [isKoalaStatusOpen, setIsKoalaStatusOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isKoalaStatusOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsKoalaStatusOpen(false);
+    };
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [isKoalaStatusOpen]);
+
   // Sync state on load
   useEffect(() => {
     const sleepDate = getCurrentSleepDateString();
@@ -167,23 +178,23 @@ export const Dashboard: React.FC = () => {
   const bedtimeResult = {
     onTime: {
       label: 'On time',
-      heading: 'Right on schedule',
-      description: 'You checked in by your bedtime goal. Sleep well.',
+      heading: 'A gentle win',
+      description: 'You made space for rest before your bedtime goal.',
     },
     late: {
       label: 'Late',
-      heading: 'Checked in after bedtime',
-      description: 'You still made time to check in before the window closed.',
+      heading: 'A little past bedtime',
+      description: 'You still paused to wind down. Tonight offers another chance.',
     },
     missing: {
       label: 'Missing',
-      heading: 'No check-in recorded',
-      description: 'The check-in window closed at 2:00 AM.',
+      heading: 'A quiet night',
+      description: 'No bedtime check-in was recorded. Tonight is a fresh start.',
     },
     upcoming: {
       label: 'Opens at 9:00 PM',
-      heading: 'Your next check-in is tonight',
-      description: 'The bedtime countdown will appear when the check-in window opens.',
+      heading: 'Tonight is still ahead',
+      description: 'Your bedtime check-in will open at 9:00 PM.',
     },
   } as const;
   const bedtimeResultMode = bedtimeState.mode === 'goal' || bedtimeState.mode === 'lateWindow'
@@ -224,10 +235,54 @@ export const Dashboard: React.FC = () => {
     </span>
   );
 
+  const renderKoalaStatusDetails = (placement: 'desktop' | 'mobile', popoverId: string) => (
+    <div
+      id={popoverId}
+      className="koala-status-popover"
+      role={placement === 'mobile' ? 'dialog' : 'region'}
+      aria-modal={placement === 'mobile' ? true : undefined}
+      aria-label="Koala status details"
+    >
+      <div className="koala-status-heading">
+        <span>{placement === 'mobile' ? 'Koala energy' : 'Koala status'}</span>
+        <div className="koala-status-heading-actions">
+          <span className={`koala-state-dot ${koalaEnergyState.tone}`} aria-hidden="true" />
+          {placement === 'mobile' && (
+            <button
+              type="button"
+              className="koala-status-close"
+              onClick={() => setIsKoalaStatusOpen(false)}
+              aria-label="Close Koala energy"
+            >
+              <X size={17} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="koala-status-summary">
+        <strong>{koalaEnergyState.label}</strong>
+        {placement === 'mobile' && <span className="koala-energy-score">{energyHearts}/10</span>}
+      </div>
+      {renderEnergyHearts(true)}
+      <p>{energyReason}</p>
+      <button
+        type="button"
+        className="koala-week-link"
+        onClick={() => {
+          setIsKoalaStatusOpen(false);
+          setCurrentView('progress');
+        }}
+      >
+        See Koala's week
+        <ChevronRight size={16} aria-hidden="true" />
+      </button>
+    </div>
+  );
+
   const renderKoalaStatus = (placement: 'desktop' | 'mobile') => {
     const popoverId = `koala-status-${placement}`;
     return (
-      <div className={`koala-status-anchor ${isKoalaStatusOpen ? 'is-open' : ''}`}>
+      <div className={`koala-status-anchor ${placement} ${isKoalaStatusOpen ? 'is-open' : ''}`}>
         <button
           type="button"
           className={`pet-sprite-stage koala-status-trigger${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}
@@ -247,26 +302,7 @@ export const Dashboard: React.FC = () => {
           </span>
         </button>
 
-        <div id={popoverId} className="koala-status-popover" role="region" aria-label="Koala status details">
-          <div className="koala-status-heading">
-            <span>Koala status</span>
-            <span className={`koala-state-dot ${koalaEnergyState.tone}`} aria-hidden="true" />
-          </div>
-          <strong>{koalaEnergyState.label}</strong>
-          {renderEnergyHearts(true)}
-          <p>{energyReason}</p>
-          <button
-            type="button"
-            className="koala-week-link"
-            onClick={() => {
-              setIsKoalaStatusOpen(false);
-              setCurrentView('progress');
-            }}
-          >
-            See Koala's week
-            <ChevronRight size={16} aria-hidden="true" />
-          </button>
-        </div>
+        {placement === 'desktop' && renderKoalaStatusDetails(placement, popoverId)}
       </div>
     );
   };
@@ -497,6 +533,21 @@ export const Dashboard: React.FC = () => {
           text-transform: uppercase;
         }
 
+        .koala-status-heading-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .koala-status-close,
+        .koala-status-backdrop {
+          display: none;
+        }
+
+        .mobile-energy-layer {
+          display: none;
+        }
+
         .koala-state-dot {
           width: 8px;
           height: 8px;
@@ -515,11 +566,26 @@ export const Dashboard: React.FC = () => {
           box-shadow: 0 0 0 5px rgba(219, 135, 152, 0.12);
         }
 
-        .koala-status-popover strong {
+        .koala-status-summary strong {
           display: block;
-          margin-bottom: 12px;
           font-family: var(--font-serif);
           font-size: 1.18rem;
+        }
+
+        .koala-status-summary {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 12px;
+        }
+
+        .koala-energy-score {
+          color: #f3a7bb;
+          font-family: var(--font-body);
+          font-size: 0.88rem;
+          font-weight: 750;
+          font-variant-numeric: tabular-nums;
         }
 
         .koala-status-popover p {
@@ -883,8 +949,8 @@ export const Dashboard: React.FC = () => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 20px 0 60px 0;
-          gap: 24px;
+          padding: 12px 0 24px;
+          gap: 14px;
         }
 
         .section-big-title {
@@ -892,14 +958,14 @@ export const Dashboard: React.FC = () => {
           font-size: 2rem;
           font-weight: 600;
           color: #f3edd7;
-          margin-bottom: 10px;
+          margin-bottom: 2px;
           align-self: flex-start;
           text-shadow: 0 4px 16px rgba(0,0,0,0.4);
         }
 
         .progress-intro {
           width: 100%;
-          margin-top: -22px;
+          margin-top: -10px;
           color: #aeb9cc;
           font-size: 0.95rem;
           line-height: 1.5;
@@ -908,7 +974,7 @@ export const Dashboard: React.FC = () => {
         .progress-grid {
           display: grid;
           grid-template-columns: 1fr;
-          gap: 24px;
+          gap: 18px;
           width: 100%;
         }
 
@@ -932,52 +998,6 @@ export const Dashboard: React.FC = () => {
           overflow: hidden;
         }
 
-        .koala-care-card {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          grid-column: 1 / -1;
-          align-items: center;
-          gap: 28px;
-          padding: 26px 30px;
-        }
-
-        .koala-care-copy {
-          min-width: 0;
-        }
-
-        .koala-care-kicker {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          margin-bottom: 8px;
-          color: #aeb9cc;
-          font-family: var(--font-body);
-          font-size: 0.82rem;
-          font-weight: 650;
-        }
-
-        .koala-care-copy h3 {
-          margin-bottom: 7px;
-          font-family: var(--font-serif);
-          font-size: 1.45rem;
-          color: #f3edd7;
-        }
-
-        .koala-care-copy p {
-          max-width: 58ch;
-          color: #aeb9cc;
-          font-size: 0.9rem;
-          line-height: 1.5;
-        }
-
-        .koala-care-energy {
-          display: flex;
-          min-width: 292px;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 10px;
-        }
-
         .energy-hearts {
           display: inline-flex;
           align-items: center;
@@ -999,12 +1019,69 @@ export const Dashboard: React.FC = () => {
           filter: none;
         }
 
-        .koala-energy-count {
+        .bedtime-reflection-card {
+          min-height: 100%;
+          padding: 22px;
+          background:
+            radial-gradient(circle at 84% 14%, rgba(232, 194, 141, 0.13), transparent 32%),
+            radial-gradient(circle at 12% 88%, rgba(167, 139, 250, 0.13), transparent 36%),
+            rgba(24, 30, 56, 0.72);
+        }
+
+        .bedtime-reflection-card::before {
+          content: '';
+          position: absolute;
+          top: -54px;
+          right: -42px;
+          width: 150px;
+          height: 150px;
+          border: 1px solid rgba(244, 220, 177, 0.12);
+          border-radius: 50%;
+          box-shadow: inset 18px -12px 36px rgba(244, 220, 177, 0.06);
+          pointer-events: none;
+        }
+
+        .bedtime-reflection-header {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          margin-bottom: 14px;
+        }
+
+        .bedtime-reflection-title {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .bedtime-reflection-title strong {
           color: #f3edd7;
-          font-family: var(--font-body);
-          font-size: 0.86rem;
-          font-weight: 700;
-          font-variant-numeric: tabular-nums;
+          font-family: var(--font-serif);
+          font-size: 1.12rem;
+          font-weight: 650;
+        }
+
+        .bedtime-reflection-title span {
+          color: #9ca8bd;
+          font-size: 0.78rem;
+          line-height: 1.35;
+        }
+
+        .bedtime-reflection-moon {
+          display: grid;
+          width: 38px;
+          height: 38px;
+          flex: 0 0 38px;
+          place-items: center;
+          border: 1px solid rgba(244, 220, 177, 0.2);
+          border-radius: 14px;
+          color: #f0d7a8;
+          background: rgba(240, 215, 168, 0.09);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
 
         /* Countdown Gauge modifications for Dark Card */
@@ -1081,14 +1158,18 @@ export const Dashboard: React.FC = () => {
           font-weight: 600;
           font-size: 0.95rem;
           color: #aeb9cc;
-          margin-bottom: 20px;
+          margin-bottom: 14px;
         }
 
         /* Streak & Rewards Adjustments */
         .middle-cards-stack {
            display: flex;
            flex-direction: column;
-           gap: 24px;
+           gap: 16px;
+        }
+
+        .progress-stat-card {
+          padding: 20px 22px;
         }
         
         .streak-val-text {
@@ -1133,7 +1214,7 @@ export const Dashboard: React.FC = () => {
           font-size: 1.2rem;
           font-weight: 700;
           color: #f3edd7;
-          margin-top: 10px;
+          margin-top: 6px;
         }
         
         @media (max-width: 1100px) {
@@ -1151,34 +1232,114 @@ export const Dashboard: React.FC = () => {
           }
         }
 
-        @media (max-width: 700px) {
-          .koala-care-card {
-            grid-template-columns: 1fr;
-            gap: 20px;
-            padding: 22px;
-          }
-
-          .koala-care-energy {
-            min-width: 0;
-            align-items: flex-start;
+        @media (max-width: 768px) {
+          .progress-container {
+            width: 100%;
+            padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+            box-sizing: border-box;
           }
 
           .energy-hearts {
             gap: 4px;
           }
 
-          .energy-hearts .energy-heart {
-            width: 19px;
-            height: 19px;
+          .energy-hearts.compact {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            gap: 3px;
           }
 
-          .koala-status-popover {
-            width: min(300px, 86vw);
+          .energy-hearts.compact .energy-heart {
+            width: 16px;
+            height: 16px;
           }
 
           .koala-energy-peek {
             right: 6px;
             bottom: 18px;
+            padding: 6px 9px;
+            font-size: 0.74rem;
+          }
+
+          .mobile-energy-layer {
+            position: fixed;
+            inset: 0;
+            display: block;
+            z-index: 1100;
+          }
+
+          .mobile-energy-layer .koala-status-backdrop {
+            position: fixed;
+            inset: 0;
+            display: block;
+            width: 100vw;
+            padding: 0;
+            border: 0;
+            background: rgba(7, 10, 27, 0.56);
+            backdrop-filter: blur(4px);
+            cursor: default;
+            animation: koala-backdrop-in 0.22s ease both;
+          }
+
+          .mobile-energy-layer .koala-status-popover {
+            position: fixed;
+            top: auto;
+            right: auto;
+            bottom: 0;
+            left: 12px;
+            width: calc(100vw - 24px);
+            max-height: min(320px, 42dvh);
+            box-sizing: border-box;
+            padding: 18px 20px calc(18px + env(safe-area-inset-bottom));
+            border-radius: 24px 24px 0 0;
+            overflow-y: auto;
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateY(0);
+            transform-origin: bottom center;
+            animation: koala-sheet-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+          }
+
+          .mobile-energy-layer .koala-status-heading {
+            margin-bottom: 5px;
+          }
+
+          .mobile-energy-layer .koala-status-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: #d8deeb;
+            background: rgba(255, 255, 255, 0.06);
+            cursor: pointer;
+          }
+
+          .mobile-energy-layer .koala-status-summary {
+            margin-bottom: 10px;
+          }
+
+          .mobile-energy-layer .koala-status-popover p {
+            display: -webkit-box;
+            margin: 10px 0 12px;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+          }
+
+          @keyframes koala-backdrop-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+
+          @keyframes koala-sheet-in {
+            from { opacity: 0; transform: translateY(104%); }
+            to { opacity: 1; transform: translateY(0); }
           }
         }
         
@@ -1188,9 +1349,43 @@ export const Dashboard: React.FC = () => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 24px 32px;
+          padding: 18px 26px;
           flex-wrap: wrap;
-          gap: 20px;
+          gap: 16px;
+        }
+
+        @media (min-width: 900px) {
+          .progress-container {
+            min-height: 100%;
+            justify-content: flex-start;
+          }
+
+          .bedtime-reflection-card .countdown-gauge-container {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 8px;
+          }
+
+          .bedtime-result-panel {
+            min-height: 150px;
+            padding: 18px;
+          }
+
+          .bedtime-result-icon {
+            width: 44px;
+            height: 44px;
+            margin-bottom: 9px;
+          }
+
+          .bedtime-result-heading {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+          }
+
+          .bedtime-result-description {
+            max-width: 92%;
+            font-size: 0.84rem;
+          }
         }
         .week-days-timeline {
           --week-node-size: 34px;
@@ -1507,18 +1702,6 @@ export const Dashboard: React.FC = () => {
               {/* Tap mirrors the desktop hover/focus interaction. */}
               {renderKoalaStatus('mobile')}
 
-              {/* Bottom Slogan Banner */}
-              <div className="bottom-slogan-banner" style={{ 
-                margin: '8px 0 14px', 
-                color: '#d8d0e6', 
-                fontSize: '0.95rem', 
-                fontWeight: 600,
-                textAlign: 'center',
-                textShadow: '0 2px 8px rgba(0,0,0,0.65)'
-              }}>
-                <span>🌙 {dashboardCopy.greeting || 'Check in on time tonight to keep your sleep streak!'}</span>
-              </div>
-
               {/* Themed 3D Primary Check-in CTA Button matching site palette */}
               {showRecordedCheckIn ? (
                 <div className="checked-sleep-state">
@@ -1569,31 +1752,21 @@ export const Dashboard: React.FC = () => {
         <div className="view-panel">
           <div className="progress-container">
             <h2 className="section-big-title">My Progress</h2>
-            <p className="progress-intro">Your bedtime choices shape how Koala feels.</p>
+            <p className="progress-intro">A quiet look at your bedtime rhythm.</p>
             
             <div className="progress-grid">
-
-              <section className="dark-glass-card koala-care-card" aria-labelledby="koala-care-title">
-                <div className="koala-care-copy">
-                  <div className="koala-care-kicker">
-                    <Heart size={16} fill="currentColor" color="#f0a0b5" aria-hidden="true" />
-                    <span>Koala energy</span>
-                  </div>
-                  <h3 id="koala-care-title">{koalaEnergyState.label}</h3>
-                  <p>{energyReason} On-time nights help Koala stay rested.</p>
-                </div>
-                <div className="koala-care-energy">
-                  {renderEnergyHearts()}
-                  <span className="koala-energy-count">{energyHearts} of 10 energy</span>
-                </div>
-              </section>
               
               {/* Left Col: Bedtime Metrics */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div className="dark-glass-card">
-                  <div className="card-header-small">
-                    <span>{bedtimeState.title} Goal</span>
-                    <Clock3 size={16} />
+                <div className="dark-glass-card bedtime-reflection-card">
+                  <div className="bedtime-reflection-header">
+                    <div className="bedtime-reflection-title">
+                      <strong>{bedtimeState.title}</strong>
+                      <span>{bedtimeState.title === "Last night's bedtime" ? 'A gentle look back at your evening' : 'A soft reminder for the night ahead'}</span>
+                    </div>
+                    <div className="bedtime-reflection-moon" aria-hidden="true">
+                      <Moon size={20} />
+                    </div>
                   </div>
                   
                   {showCountdown && !summary?.todayCheckedIn ? (
@@ -1641,7 +1814,7 @@ export const Dashboard: React.FC = () => {
               {/* Right Col: Badges & Streaks */}
               <div className="middle-cards-stack">
                 {/* Streak Card */}
-                <div className="dark-glass-card">
+                <div className="dark-glass-card progress-stat-card">
                   <div className="card-header-small">
                     <span>Current streak</span>
                     <Sparkles size={16} color="#fbbf24" />
@@ -1657,7 +1830,7 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Badges Card */}
-                <div className="dark-glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="dark-glass-card progress-stat-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <div className="card-header-small">
                     <span>Badges earned</span>
                     <Award size={16} color="#f472b6" />
@@ -1704,6 +1877,18 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {currentView === 'pet' && isKoalaStatusOpen && (
+        <div className="mobile-energy-layer">
+          <button
+            type="button"
+            className="koala-status-backdrop"
+            onClick={() => setIsKoalaStatusOpen(false)}
+            aria-label="Close Koala energy"
+          />
+          {renderKoalaStatusDetails('mobile', 'koala-status-mobile')}
+        </div>
+      )}
 
       {/* Check-In Confirmation Modal overlay if needed (or we just let slider do the work) */}
       {justCheckedInMsg && (
