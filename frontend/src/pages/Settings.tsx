@@ -158,6 +158,16 @@ export const Settings: React.FC = () => {
           gap: 24px;
           color: var(--text-main);
           width: 100%;
+          max-width: 1080px;
+          margin: 0 auto;
+          padding: 20px 24px 88px;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+          .settings-view {
+            padding: 62px 16px 92px;
+          }
         }
 
         .settings-header {

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore, getCurrentSleepDateString, getLocalDateString } from '../stores/useStore';
-import { Sparkles, Moon, Check, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, ChevronLeft, Heart } from 'lucide-react';
+import { Sparkles, Moon, Check, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, Heart } from 'lucide-react';
+import { BadgeGraphic } from '../components/BadgeIcons';
 import {
   formatRemainingTime,
   isCheckInWindowOpen,
@@ -945,17 +946,9 @@ export const Dashboard: React.FC = () => {
           filter: brightness(1.28) drop-shadow(0 0 7px rgba(243, 237, 215, 0.82));
         }
 
-        .nav-arrow-btn.right-edge:hover .nav-arrow-icon,
-        .nav-arrow-btn.right-edge:focus-visible .nav-arrow-icon {
-          transform: translateX(1px) scale(1.04);
-        }
-
         .nav-arrow-btn.left-edge:hover .nav-arrow-icon,
         .nav-arrow-btn.left-edge:focus-visible .nav-arrow-icon {
           transform: translateX(-1px) scale(1.04);
-        }
-        .nav-arrow-btn.right-edge {
-          right: 30px;
         }
         .nav-arrow-btn.left-edge {
           left: 30px;
@@ -971,11 +964,6 @@ export const Dashboard: React.FC = () => {
           color: #f3edd7;
           text-shadow: 0 0 10px rgba(243, 237, 215, 0.28);
           transition: opacity 0.72s ease, transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        .right-edge:hover .arrow-text-label,
-        .right-edge:focus-visible .arrow-text-label {
-          opacity: 1;
-          transform: translateX(-60px);
         }
         .left-edge:hover .arrow-text-label,
         .left-edge:focus-visible .arrow-text-label {
@@ -1661,6 +1649,49 @@ export const Dashboard: React.FC = () => {
           border: 1px solid rgba(255,255,255,0.15);
         }
 
+        /* Keep this override after the desktop tracker rules so the mobile grid wins the cascade. */
+        @media (max-width: 768px) {
+          .this-week-card {
+            padding: 15px 10px;
+            align-items: flex-start;
+            gap: 11px;
+            overflow: hidden;
+          }
+
+          .this-week-card > span {
+            font-size: 1.08rem !important;
+          }
+
+          .week-days-timeline {
+            --week-node-size: 26px;
+            --week-label-height: 15px;
+            --week-row-gap: 6px;
+            display: grid;
+            width: 100%;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 0;
+          }
+
+          .day-node-column {
+            width: auto;
+            min-width: 0;
+            flex: none;
+          }
+
+          .day-node-column:not(:first-child)::before {
+            left: calc(-50% + (var(--week-node-size) / 2));
+            width: calc(100% - var(--week-node-size));
+          }
+
+          .day-label-text {
+            font-size: 0.68rem;
+          }
+
+          .day-node-circle span {
+            font-size: 0.78rem !important;
+          }
+        }
+
         /* Post Check-in Result within Dark Card */
         .bedtime-result-panel {
           width: 100%;
@@ -1743,20 +1774,6 @@ export const Dashboard: React.FC = () => {
       `}</style>
 
       {/* Floating Transition Controls */}
-      {currentView === 'pet' && (
-        <button
-          type="button"
-          className="nav-arrow-btn right-edge"
-          onClick={() => {
-            setIsKoalaStatusOpen(false);
-            setCurrentView('progress');
-          }}
-          aria-label="See Koala's week"
-        >
-          <ChevronRight className="nav-arrow-icon" size={28} />
-          <span className="arrow-text-label">See Koala's week</span>
-        </button>
-      )}
       {currentView === 'progress' && (
         <button
           type="button"
@@ -1764,7 +1781,7 @@ export const Dashboard: React.FC = () => {
           onClick={() => setCurrentView('pet')}
           aria-label="Return to Sanctuary"
         >
-          <ChevronLeft className="nav-arrow-icon" size={28} />
+          <Heart className="nav-arrow-icon" size={26} strokeWidth={1.8} fill="currentColor" />
           <span className="arrow-text-label">Koala</span>
         </button>
       )}
@@ -1872,11 +1889,15 @@ export const Dashboard: React.FC = () => {
               >
                 <div className="badge-icons-row">
                   {badges?.unlocked && badges.unlocked.length > 0 ? (
-                    badges.unlocked.slice(0, 3).map((_, i) => (
-                      <div key={i} className="badge-mini-shield">🏆</div>
+                    badges.unlocked.slice(0, 3).map((b, i) => (
+                      <div key={i} className="badge-mini-shield" title={b.name} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <BadgeGraphic name={b.name} isLocked={false} />
+                      </div>
                     ))
                   ) : (
-                    <div className="badge-mini-shield">🎖️</div>
+                    <div className="badge-mini-shield" title="Locked Badges" style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <BadgeGraphic name="First Sleep" isLocked={true} />
+                    </div>
                   )}
                 </div>
               </div>
@@ -2039,13 +2060,21 @@ export const Dashboard: React.FC = () => {
                   <div style={{ display: 'flex', gap: '10px' }}>
                     {summary && summary.badges.length > 0 ? (
                       summary.badges.slice(0, 3).map((b, i) => (
-                        <div key={i} className="badge-shield-icon" title={b.name}><Award size={20} /></div>
+                        <div key={i} className="badge-shield-icon" title={b.name} style={{ width: '40px', height: '40px', display: 'flex' }}>
+                          <BadgeGraphic name={b.name} isLocked={false} />
+                        </div>
                       ))
                     ) : (
                       <>
-                        <div className="badge-shield-icon" style={{ opacity: 0.3 }} title="Night Owl (Locked)"><Moon size={20} /></div>
-                        <div className="badge-shield-icon" style={{ opacity: 0.3 }} title="Early Koala (Locked)"><Award size={20} /></div>
-                        <div className="badge-shield-icon" style={{ opacity: 0.3 }} title="Streak Star (Locked)"><Flame size={20} /></div>
+                        <div className="badge-shield-icon" title="First Sleep (Locked)" style={{ width: '40px', height: '40px', display: 'flex' }}>
+                          <BadgeGraphic name="First Sleep" isLocked={true} />
+                        </div>
+                        <div className="badge-shield-icon" title="3-Day Koala Care (Locked)" style={{ width: '40px', height: '40px', display: 'flex' }}>
+                          <BadgeGraphic name="3-Day Koala Care" isLocked={true} />
+                        </div>
+                        <div className="badge-shield-icon" title="One Week Calm (Locked)" style={{ width: '40px', height: '40px', display: 'flex' }}>
+                          <BadgeGraphic name="One Week Calm" isLocked={true} />
+                        </div>
                       </>
                     )}
                   </div>

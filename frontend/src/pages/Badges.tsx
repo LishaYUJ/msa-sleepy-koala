@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useStore } from '../stores/useStore';
 import { GlassCard } from '../components/GlassCard';
 import { Award, Lock, Sparkles } from 'lucide-react';
+import { BadgeGraphic } from '../components/BadgeIcons';
 
 export const Badges: React.FC = () => {
   const { badges, loadBadges, isLoading } = useStore();
@@ -93,38 +94,29 @@ export const Badges: React.FC = () => {
           background-color: rgba(0,0,0,0.03);
         }
 
-        .badge-shield {
+        .badge-illustration {
           width: 80px;
           height: 80px;
-          border-radius: 50%;
+          position: relative;
           display: flex;
           align-items: center;
           justify-content: center;
-          background-color: var(--card-bg);
-          border: 1px dashed var(--input-border);
-          position: relative;
           transition: transform var(--transition-normal);
         }
 
-        .museum-card:hover:not(.locked) .badge-shield {
+        .museum-card:hover:not(.locked) .badge-illustration {
           transform: scale(1.1) rotate(5deg);
-        }
-
-        .badge-shield.unlocked {
-          background: linear-gradient(135deg, rgba(92, 95, 200, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
-          border: 2px solid var(--primary);
-          box-shadow: 0 8px 16px var(--primary-glow);
         }
 
         .lock-overlay {
           position: absolute;
-          bottom: 2px;
-          right: 2px;
-          background-color: var(--text-main);
-          border: 2px solid var(--card-bg);
-          color: var(--text-inverse);
-          width: 24px;
-          height: 24px;
+          bottom: -4px;
+          right: -4px;
+          background-color: var(--surface-2);
+          border: 3px solid var(--card-bg);
+          color: var(--text-muted);
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -171,9 +163,9 @@ export const Badges: React.FC = () => {
           {/* Render Unlocked Badges */}
           {badges.unlocked.map((badge, index) => (
             <GlassCard className="museum-card" key={`unlocked-${index}`}>
-              <div className="badge-shield unlocked">
-                <Award size={40} color="var(--primary)" fill="none" />
-                <Sparkles size={16} color="var(--secondary)" className="crown-icon" style={{ position: 'absolute', top: '-6px', right: '-6px' }} />
+              <div className="badge-illustration">
+                <BadgeGraphic name={badge.name} isLocked={false} />
+                <Sparkles size={20} color="var(--primary)" className="crown-icon" style={{ position: 'absolute', top: '-8px', right: '-8px' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, alignItems: 'center' }}>
                 <span className="badge-title">{badge.name}</span>
@@ -186,10 +178,10 @@ export const Badges: React.FC = () => {
           {/* Render Locked Badges */}
           {badges.locked.map((badge, index) => (
             <GlassCard className="museum-card locked" key={`locked-${index}`}>
-              <div className="badge-shield">
-                <Award size={40} color="var(--text-muted)" />
+              <div className="badge-illustration">
+                <BadgeGraphic name={badge.name} isLocked={true} />
                 <div className="lock-overlay">
-                  <Lock size={12} />
+                  <Lock size={14} strokeWidth={2.5} />
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, alignItems: 'center' }}>
