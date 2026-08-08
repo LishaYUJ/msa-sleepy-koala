@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { LogOut, Moon, RefreshCw, WifiOff } from 'lucide-react';
 import { useStore } from './stores/useStore';
 import { Navbar } from './components/Navbar';
 import { MobileBottomNav } from './components/MobileBottomNav';
@@ -28,19 +29,105 @@ const StarrySky: React.FC = () => {
   );
 };
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token, onboardingCompleted, loadSettings } = useStore();
+const SessionGateFallback: React.FC<{
+  failed: boolean;
+  errorMessage: string | null;
+  onRetry: () => void;
+  onLogout: () => void;
+}> = ({ failed, errorMessage, onRetry, onLogout }) => (
+  <main className="session-gate" aria-live="polite" aria-busy={!failed}>
+    <section className={`session-gate-card${failed ? ' is-error' : ''}`}>
+      <div className="session-gate-icon" aria-hidden="true">
+        {failed ? <WifiOff size={25} /> : <Moon size={25} />}
+      </div>
+
+      {failed ? (
+        <>
+          <p className="session-gate-kicker">Connection paused</p>
+          <h1>Koala couldn’t reach the server</h1>
+          <p className="session-gate-copy">
+            {errorMessage || 'Start the local backend, then try again.'}
+          </p>
+          <div className="session-gate-actions">
+            <button type="button" className="session-gate-primary" onClick={onRetry}>
+              <RefreshCw size={17} />
+              Try again
+            </button>
+            <button type="button" className="session-gate-secondary" onClick={onLogout}>
+              <LogOut size={16} />
+              Log out
+            </button>
+          </div>
+          <p className="session-gate-hint">
+            Local development expects the API at <code>localhost:5125</code>.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="session-gate-kicker">One quiet moment</p>
+          <h1>Waking Koala…</h1>
+          <p className="session-gate-copy">Checking your bedtime settings.</p>
+          <span className="session-gate-loader" aria-hidden="true" />
+        </>
+      )}
+    </section>
+  </main>
+);
+
+const useSettingsGate = () => {
+  const { token, onboardingCompleted, loadSettings, logout, error, setError } = useStore();
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (token && onboardingCompleted === null) loadSettings();
-  }, [token, onboardingCompleted, loadSettings]);
+    let cancelled = false;
+
+    if (!token || onboardingCompleted !== null) {
+      setLoadFailed(false);
+      return () => { cancelled = true; };
+    }
+
+    setLoadFailed(false);
+    void loadSettings().then((settings) => {
+      if (!cancelled && !settings && useStore.getState().token) {
+        setLoadFailed(true);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [attempt, loadSettings, onboardingCompleted, token]);
+
+  const retry = useCallback(() => {
+    setError(null);
+    setAttempt((currentAttempt) => currentAttempt + 1);
+  }, [setError]);
+
+  return {
+    token,
+    onboardingCompleted,
+    loadFailed,
+    error,
+    retry,
+    logout,
+  };
+};
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { token, onboardingCompleted, loadFailed, error, retry, logout } = useSettingsGate();
   
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
   if (onboardingCompleted === null) {
-    return <div className="app-shell" aria-busy="true" />;
+    return (
+      <SessionGateFallback
+        failed={loadFailed}
+        errorMessage={error}
+        onRetry={retry}
+        onLogout={logout}
+      />
+    );
   }
 
   if (!onboardingCompleted) {
@@ -64,14 +151,19 @@ const HomeRoute: React.FC = () => {
 };
 
 const OnboardingRoute: React.FC = () => {
-  const { token, onboardingCompleted, loadSettings } = useStore();
-
-  useEffect(() => {
-    if (token && onboardingCompleted === null) loadSettings();
-  }, [token, onboardingCompleted, loadSettings]);
+  const { token, onboardingCompleted, loadFailed, error, retry, logout } = useSettingsGate();
 
   if (!token) return <Navigate to="/login" replace />;
-  if (onboardingCompleted === null) return <div className="app-shell" aria-busy="true" />;
+  if (onboardingCompleted === null) {
+    return (
+      <SessionGateFallback
+        failed={loadFailed}
+        errorMessage={error}
+        onRetry={retry}
+        onLogout={logout}
+      />
+    );
+  }
   if (onboardingCompleted) return <Navigate to="/dashboard" replace />;
   return <Onboarding />;
 };

@@ -45,8 +45,18 @@ export const Dashboard: React.FC = () => {
       if (event.key === 'Escape') setIsKoalaStatusOpen(false);
     };
 
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest('.koala-status-anchor')) return;
+      setIsKoalaStatusOpen(false);
+    };
+
     window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    return () => {
+      window.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+    };
   }, [isKoalaStatusOpen]);
 
   // Sync state on load
@@ -209,7 +219,9 @@ export const Dashboard: React.FC = () => {
     ? { label: 'Needs extra rest', tone: 'very-weak' }
     : effectiveFatigueState === 'weak'
       ? { label: 'A little tired', tone: 'weak' }
-      : { label: 'Bright & rested', tone: 'healthy' };
+      : energyHearts <= 7
+        ? { label: 'Doing okay', tone: 'steady' }
+        : { label: 'Bright & rested', tone: 'healthy' };
   const energyReason = fatigueScore === 0
     ? 'Recent on-time check-ins are keeping Koala bright.'
     : fatigueScore === 1
@@ -289,7 +301,7 @@ export const Dashboard: React.FC = () => {
           onClick={() => setIsKoalaStatusOpen((isOpen) => !isOpen)}
           aria-expanded={isKoalaStatusOpen}
           aria-controls={popoverId}
-          aria-label={`Show Koala status. Energy ${energyHearts} out of 10.`}
+          aria-label={`${isKoalaStatusOpen ? 'Hide' : 'Show'} Koala status. Energy ${energyHearts} out of 10.`}
         >
           <img
             src={koalaImage}
@@ -301,6 +313,37 @@ export const Dashboard: React.FC = () => {
             <span>{energyHearts}/10</span>
           </span>
         </button>
+
+        {placement === 'mobile' && isKoalaStatusOpen && (
+          <div id={popoverId} className="mobile-energy-orbit">
+            <span className="mobile-energy-arc" aria-hidden="true">
+              {Array.from({ length: 10 }, (_, index) => (
+                <Heart
+                  key={index}
+                  className={index < energyHearts ? 'mobile-orbit-heart filled' : 'mobile-orbit-heart empty'}
+                  size={19}
+                  strokeWidth={1.9}
+                  fill={index < energyHearts ? 'currentColor' : 'none'}
+                />
+              ))}
+            </span>
+            <div className="mobile-energy-orbit-card">
+              <span>Koala energy</span>
+              <strong>{koalaEnergyState.label} · <b>{energyHearts}/10</b></strong>
+              <button
+                type="button"
+                className="mobile-energy-progress-link"
+                onClick={() => {
+                  setIsKoalaStatusOpen(false);
+                  setCurrentView('progress');
+                }}
+              >
+                View sleep progress
+                <ChevronRight size={13} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {placement === 'desktop' && renderKoalaStatusDetails(placement, popoverId)}
       </div>
@@ -403,6 +446,10 @@ export const Dashboard: React.FC = () => {
           flex: none;
         }
 
+        .mobile-greeting-copy {
+          display: none;
+        }
+
         .pet-sprite-stage {
           width: 680px;
           max-width: 95vw;
@@ -483,6 +530,10 @@ export const Dashboard: React.FC = () => {
           transition: transform 0.24s ease, border-color 0.24s ease, background 0.24s ease;
         }
 
+        .mobile-energy-orbit {
+          display: none;
+        }
+
         .koala-status-trigger:hover .koala-energy-peek,
         .koala-status-trigger:focus-visible .koala-energy-peek,
         .koala-status-anchor.is-open .koala-energy-peek {
@@ -559,6 +610,11 @@ export const Dashboard: React.FC = () => {
         .koala-state-dot.weak {
           background: #e3b96d;
           box-shadow: 0 0 0 5px rgba(227, 185, 109, 0.12);
+        }
+
+        .koala-state-dot.steady {
+          background: #9fba9e;
+          box-shadow: 0 0 0 5px rgba(159, 186, 158, 0.12);
         }
 
         .koala-state-dot.very-weak {
@@ -1233,6 +1289,34 @@ export const Dashboard: React.FC = () => {
         }
 
         @media (max-width: 768px) {
+          .mobile-greeting-copy {
+            display: flex;
+            width: min(340px, 90vw);
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+          }
+
+          .mobile-greeting-copy .greeting-text {
+            margin-bottom: 7px;
+            color: #f3edd7;
+            font-family: var(--font-serif);
+            font-size: clamp(1.55rem, 7vw, 2.2rem);
+            line-height: 1.15;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            text-wrap: balance;
+          }
+
+          .mobile-greeting-copy .greeting-subtext {
+            margin-bottom: 14px;
+            color: #aeb9cc;
+            font-family: var(--font-body);
+            font-size: 0.96rem;
+            line-height: 1.4;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            text-wrap: balance;
+          }
+
           .progress-container {
             width: 100%;
             padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
@@ -1256,10 +1340,124 @@ export const Dashboard: React.FC = () => {
           }
 
           .koala-energy-peek {
-            right: 6px;
-            bottom: 18px;
-            padding: 6px 9px;
-            font-size: 0.74rem;
+            display: none;
+          }
+
+          .koala-status-anchor.mobile.is-open {
+            padding-top: 116px;
+          }
+
+          .koala-status-anchor.mobile .pet-sprite-stage {
+            margin-bottom: 12px;
+          }
+
+          .mobile-energy-orbit {
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            display: block;
+            width: min(292px, 92vw);
+            height: 132px;
+            color: #f3a7bb;
+            pointer-events: none;
+            transform: translateX(-50%);
+          }
+
+          .mobile-energy-arc {
+            position: absolute;
+            inset: 0;
+          }
+
+          .mobile-orbit-heart {
+            position: absolute;
+            filter: drop-shadow(0 0 9px rgba(243, 167, 187, 0.38));
+          }
+
+          .mobile-orbit-heart.empty {
+            color: rgba(238, 211, 222, 0.64);
+            filter: none;
+          }
+
+          .mobile-orbit-heart:nth-child(1) { left: 8px; top: 62px; transform: rotate(-25deg); }
+          .mobile-orbit-heart:nth-child(2) { left: 25px; top: 38px; transform: rotate(-19deg); }
+          .mobile-orbit-heart:nth-child(3) { left: 52px; top: 19px; transform: rotate(-13deg); }
+          .mobile-orbit-heart:nth-child(4) { left: 84px; top: 7px; transform: rotate(-7deg); }
+          .mobile-orbit-heart:nth-child(5) { left: 119px; top: 1px; transform: rotate(-2deg); }
+          .mobile-orbit-heart:nth-child(6) { right: 119px; top: 1px; transform: rotate(2deg); }
+          .mobile-orbit-heart:nth-child(7) { right: 84px; top: 7px; transform: rotate(7deg); }
+          .mobile-orbit-heart:nth-child(8) { right: 52px; top: 19px; transform: rotate(13deg); }
+          .mobile-orbit-heart:nth-child(9) { right: 25px; top: 38px; transform: rotate(19deg); }
+          .mobile-orbit-heart:nth-child(10) { right: 8px; top: 62px; transform: rotate(25deg); }
+
+          .mobile-energy-orbit-card {
+            position: absolute;
+            top: 56px;
+            left: 50%;
+            display: flex;
+            min-width: 194px;
+            padding: 9px 17px 8px;
+            box-sizing: border-box;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            border: 1px solid rgba(203, 194, 237, 0.24);
+            border-radius: 22px;
+            background: rgba(24, 27, 58, 0.82);
+            box-shadow: 0 12px 30px rgba(7, 9, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(14px);
+            transform: translateX(-50%);
+          }
+
+          .mobile-energy-orbit-card > span {
+            color: #b9a9f3;
+            font-family: var(--font-body);
+            font-size: 0.62rem;
+            font-weight: 750;
+            letter-spacing: 0.08em;
+            line-height: 1.2;
+            text-transform: uppercase;
+          }
+
+          .mobile-energy-orbit-card strong {
+            white-space: nowrap;
+            color: #f3edd7;
+            font-family: var(--font-serif);
+            font-size: 0.92rem;
+            font-weight: 650;
+          }
+
+          .mobile-energy-orbit-card b {
+            color: #f3a7bb;
+            font-family: var(--font-body);
+            font-size: 0.84rem;
+            font-variant-numeric: tabular-nums;
+          }
+
+          .mobile-energy-progress-link {
+            display: inline-flex;
+            margin-top: 6px;
+            padding: 6px 8px 2px;
+            align-items: center;
+            gap: 3px;
+            border: 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #c4b5fd;
+            background: transparent;
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            font-weight: 700;
+            pointer-events: auto;
+          }
+
+          .mobile-energy-progress-link:focus-visible {
+            outline: 2px solid rgba(196, 181, 253, 0.82);
+            outline-offset: 2px;
+            border-radius: 6px;
+          }
+
+          .mobile-energy-progress-link:active {
+            transform: translateY(1px);
           }
 
           .mobile-energy-layer {
@@ -1683,10 +1881,13 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Top Slogan Speech Bubble */}
-              <div className="duo-speech-bubble" style={{ marginBottom: '12px', maxWidth: '340px', width: '90vw' }}>
-                <span>✨ {dashboardCopy.subtitle || 'Your koala is feeling great! Sleep on time to stay fresh~'}</span>
-              </div>
+              {/* Restore the original serif greeting hierarchy; it yields to energy on tap. */}
+              {!isKoalaStatusOpen && (
+                <div className="mobile-greeting-copy">
+                  <div className="greeting-text">{dashboardCopy.greeting}</div>
+                  <div className="greeting-subtext">{dashboardCopy.subtitle}</div>
+                </div>
+              )}
 
               {/* Bedtime Goal Pill */}
               <div className="bedtime-goal-pill" style={{ 
@@ -1877,18 +2078,6 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {currentView === 'pet' && isKoalaStatusOpen && (
-        <div className="mobile-energy-layer">
-          <button
-            type="button"
-            className="koala-status-backdrop"
-            onClick={() => setIsKoalaStatusOpen(false)}
-            aria-label="Close Koala energy"
-          />
-          {renderKoalaStatusDetails('mobile', 'koala-status-mobile')}
-        </div>
-      )}
 
       {/* Check-In Confirmation Modal overlay if needed (or we just let slider do the work) */}
       {justCheckedInMsg && (
