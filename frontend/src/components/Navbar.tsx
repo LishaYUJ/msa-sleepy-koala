@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Trophy, Star, Settings, LogOut, ChevronDown, Clock } from 'lucide-react';
 import { useStore } from '../stores/useStore';
 
-import userAvatar from '../assets/user_avatar.png';
+import userAvatar from '../assets/user_avatar.jpg';
 import sidebarLogo from '../assets/sidebar_logo.png';
 
 export const Navbar: React.FC = () => {

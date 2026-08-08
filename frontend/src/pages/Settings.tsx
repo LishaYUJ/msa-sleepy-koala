@@ -4,7 +4,8 @@ import { useStore } from '../stores/useStore';
 import { GlassCard } from '../components/GlassCard';
 import { api } from '../services/api';
 import { LogOut, Save, Check, Camera, Trash2 } from 'lucide-react';
-import userAvatar from '../assets/user_avatar.png';
+import userAvatar from '../assets/user_avatar.jpg';
+import { TimeGoalPicker } from '../components/TimeGoalPicker';
 
 export const Settings: React.FC = () => {
   const { nickname, avatarUrl, logout, deleteAccount, token } = useStore();
@@ -374,17 +375,15 @@ export const Settings: React.FC = () => {
               <h2 className="brand-font section-title">Sleep preferences</h2>
               
               <div className="form-group">
-                <label className="form-label" htmlFor="settingsBedtime">Target Bedtime (21:00-00:00)</label>
-                <input
+                <label className="form-label" htmlFor="settingsBedtime">Target Bedtime</label>
+                <TimeGoalPicker
                   id="settingsBedtime"
-                  type="text"
-                  placeholder="22:30"
-                  className="form-input"
                   value={cutoffTime}
-                  onChange={(e) => setCutoffTime(e.target.value)}
+                  onChange={(val) => { setCutoffTime(val); setErrorLocal(null); }}
                 />
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-                  Check-in is available from 21:00 to 02:00. After your target bedtime it is marked late.
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                  Your bedtime goal must be set between <strong>9:00 PM and 12:00 AM</strong>.<br/>
+                  Check-in is available each night from <strong>9:00 PM to 2:00 AM</strong>.
                 </p>
               </div>
 
