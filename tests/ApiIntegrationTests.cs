@@ -19,6 +19,7 @@ namespace SleepyKoala.Tests
         public const string TestIssuer = "SleepyKoalaApi.Tests";
         public const string TestAudience = "SleepyKoalaClient.Tests";
         public const string TestJwtKey = "test_secret_key_that_is_long_enough_for_hmac_sha256_koala";
+        public static readonly DateTimeOffset TestNow = new(2026, 7, 17, 10, 0, 0, TimeSpan.Zero);
 
         private SqliteConnection? _connection;
 
@@ -39,6 +40,8 @@ namespace SleepyKoala.Tests
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
+                services.RemoveAll<TimeProvider>();
+                services.AddSingleton<TimeProvider>(new FixedTimeProvider(TestNow));
 
                 _connection = new SqliteConnection("DataSource=:memory:");
                 _connection.Open();
@@ -57,6 +60,11 @@ namespace SleepyKoala.Tests
         {
             base.Dispose(disposing);
             _connection?.Dispose();
+        }
+
+        private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+        {
+            public override DateTimeOffset GetUtcNow() => now;
         }
     }
 
@@ -120,6 +128,7 @@ namespace SleepyKoala.Tests
             Assert.Equal(credentials.Nickname, settings!.Nickname);
             Assert.Equal("22:00", settings.CutoffTime);
             Assert.Equal("system", settings.ThemePreference);
+            Assert.Equal("UTC", settings.TimeZoneId);
         }
 
         [Fact]
@@ -219,7 +228,6 @@ namespace SleepyKoala.Tests
                 LocalTime = "21:30"
             });
             var getCheckIns = await client.GetAsync("/api/CheckIns/me");
-            var deleteCheckIn = await client.DeleteAsync($"/api/CheckIns/{Guid.NewGuid()}");
 
             Assert.Equal(HttpStatusCode.Unauthorized, getSettings.StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, putSettings.StatusCode);
@@ -227,7 +235,6 @@ namespace SleepyKoala.Tests
             Assert.Equal(HttpStatusCode.Unauthorized, getBadges.StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, postCheckIn.StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, getCheckIns.StatusCode);
-            Assert.Equal(HttpStatusCode.Unauthorized, deleteCheckIn.StatusCode);
         }
 
         [Fact]
@@ -322,11 +329,6 @@ namespace SleepyKoala.Tests
             var leaders = await leaderboard.Content.ReadFromJsonAsync<List<LeaderboardDto>>();
             Assert.Contains(leaders!, item => item.Nickname == "Sleepy Tester");
 
-            var deleteResponse = await client.DeleteAsync($"/api/CheckIns/{checkIn.CheckInId}");
-            Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
-
-            var deleteAgain = await client.DeleteAsync($"/api/CheckIns/{checkIn.CheckInId}");
-            Assert.Equal(HttpStatusCode.NotFound, deleteAgain.StatusCode);
         }
 
         [Fact]
@@ -347,6 +349,24 @@ namespace SleepyKoala.Tests
             Assert.Equal(0, summary.CurrentStreak);
             Assert.Equal(2, summary.FatigueScore);
             Assert.Equal("healthy", summary.FatigueState);
+        }
+
+        [Fact]
+        public async Task History_InferMissingOnlyAfterTheSleepWindowCloses()
+        {
+            var client = _factory.CreateClient();
+            var credentials = await RegisterUserAsync(client);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credentials.Token);
+
+            var historyResponse = await client.GetAsync("/api/CheckIns/me");
+
+            Assert.Equal(HttpStatusCode.OK, historyResponse.StatusCode);
+            var history = await historyResponse.Content.ReadFromJsonAsync<List<CheckInHistoryDto>>();
+            var missing = Assert.Single(history!);
+            Assert.Equal("2026-07-16", missing.LocalCheckInDate);
+            Assert.Equal("missing", missing.Status);
+            Assert.False(missing.Recorded);
+            Assert.Null(missing.Id);
         }
 
         private static async Task<TestCredentials> RegisterUserAsync(HttpClient client)

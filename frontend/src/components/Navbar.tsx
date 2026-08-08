@@ -199,20 +199,20 @@ export const Navbar: React.FC = () => {
           }
         }
       `}</style>
-      
+
       {/* Left: Brand */}
       <NavLink to="/" className="brand-section">
         <img src={sidebarLogo} alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain' }} />
         <span className="brand-title">Sleepy Koala</span>
       </NavLink>
-      
+
       {/* Center: Navigation Links */}
       <div className="nav-center-menu">
         <NavLink to="/" className={({ isActive }) => `nav-item-link ${isActive ? 'active' : ''}`}>
           <Home className="nav-icon" />
           <span>Sanctuary</span>
         </NavLink>
-        
+
         <NavLink to="/history" className={({ isActive }) => `nav-item-link ${isActive ? 'active' : ''}`}>
           <Clock className="nav-icon" />
           <span>History</span>
@@ -222,13 +222,13 @@ export const Navbar: React.FC = () => {
           <Trophy className="nav-icon" />
           <span>Leaderboard</span>
         </NavLink>
-        
+
         <NavLink to="/badges" className={({ isActive }) => `nav-item-link ${isActive ? 'active' : ''}`}>
           <Star className="nav-icon" />
           <span>Rewards</span>
         </NavLink>
       </div>
-      
+
       {/* Right: Profile */}
       <div className="nav-right-profile">
         <div className="profile-trigger" onClick={() => setAccountMenuOpen(!accountMenuOpen)}>
@@ -236,7 +236,7 @@ export const Navbar: React.FC = () => {
           <span className="user-name-text">{displayName}</span>
           <ChevronDown size={16} color="#8e9bb4" />
         </div>
-        
+
         {accountMenuOpen && (
           <div className="nav-account-popover">
             <button className="popover-item" onClick={() => { setAccountMenuOpen(false); navigate('/settings'); }}>

@@ -12,6 +12,7 @@ export const Settings: React.FC = () => {
   const [profileAvatar, setProfileAvatar] = useState(avatarUrl || userAvatar);
   const [cutoffTime, setCutoffTime] = useState('22:00');
   const [themePreference, setThemePreference] = useState('system');
+  const [timeZoneId, setTimeZoneId] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'Pacific/Auckland');
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [successLocal, setSuccessLocal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,6 +84,7 @@ export const Settings: React.FC = () => {
           setProfileAvatar(response.avatarDataUrl || userAvatar);
           setCutoffTime(response.cutoffTime);
           setThemePreference(response.themePreference || 'system');
+          setTimeZoneId(response.timeZoneId || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Pacific/Auckland');
         }
       } catch (err: any) {
         if (isMounted) {
@@ -129,6 +131,7 @@ export const Settings: React.FC = () => {
         cutoffTime: cutoffTime,
         themePreference: themePreference,
         onboardingCompleted: true,
+        timeZoneId: timeZoneId,
         avatarDataUrl: profileAvatar === userAvatar ? '' : profileAvatar
       });
       

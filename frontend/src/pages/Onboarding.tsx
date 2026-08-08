@@ -17,7 +17,8 @@ export const Onboarding: React.FC = () => {
     if (!settings) return;
     setError(null);
     try {
-      await updateSettings({ ...settings, cutoffTime, onboardingCompleted: true });
+      const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || settings.timeZoneId;
+      await updateSettings({ ...settings, cutoffTime, onboardingCompleted: true, timeZoneId: detectedTimeZone });
       navigate('/dashboard', { replace: true });
     } catch {
       setError('We could not save your settings. Please try again.');

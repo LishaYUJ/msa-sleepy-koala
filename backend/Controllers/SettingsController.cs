@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SleepyKoala.Api.Data;
 using SleepyKoala.Api.DTOs;
 using SleepyKoala.Api.Extensions;
+using SleepyKoala.Api.Services;
 
 namespace SleepyKoala.Api.Controllers
 {
@@ -21,10 +22,17 @@ namespace SleepyKoala.Api.Controllers
         ];
 
         private readonly ApplicationDbContext _context;
+        private readonly ISleepCalendarService _sleepCalendar;
+        private readonly TimeProvider _timeProvider;
 
-        public SettingsController(ApplicationDbContext context)
+        public SettingsController(
+            ApplicationDbContext context,
+            ISleepCalendarService sleepCalendar,
+            TimeProvider timeProvider)
         {
             _context = context;
+            _sleepCalendar = sleepCalendar;
+            _timeProvider = timeProvider;
         }
 
         [HttpGet]
@@ -45,6 +53,7 @@ namespace SleepyKoala.Api.Controllers
                 CutoffTime = user.Settings.CutoffTime,
                 ThemePreference = user.Settings.ThemePreference,
                 OnboardingCompleted = user.Settings.OnboardingCompleted,
+                TimeZoneId = user.Settings.TimeZoneId,
                 AvatarDataUrl = user.AvatarDataUrl
             });
         }
@@ -64,6 +73,11 @@ namespace SleepyKoala.Api.Controllers
                 return BadRequest(new { error = "InvalidCutoffTime", message = "Bedtime (CutoffTime) must be between 21:00 and 00:00 for the MVP." });
             }
 
+            if (!_sleepCalendar.IsValidTimeZone(dto.TimeZoneId))
+            {
+                return BadRequest(new { error = "InvalidTimeZone", message = "TimeZoneId must be a valid IANA time zone." });
+            }
+
 
 
             var user = await _context.Users
@@ -77,10 +91,19 @@ namespace SleepyKoala.Api.Controllers
                 return BadRequest(new { error = "InvalidAvatar", message = avatarError });
             }
 
+            var completesOnboarding = !user.Settings.OnboardingCompleted && dto.OnboardingCompleted;
+
             user.Nickname = dto.Nickname.Trim();
             user.Settings.CutoffTime = dto.CutoffTime;
             user.Settings.ThemePreference = dto.ThemePreference;
+            user.Settings.TimeZoneId = dto.TimeZoneId;
             user.Settings.OnboardingCompleted = dto.OnboardingCompleted;
+            if (completesOnboarding)
+            {
+                user.Settings.TrackingStartSleepDate = _sleepCalendar
+                    .GetTrackingStartSleepDate(user.Settings, _timeProvider.GetUtcNow().UtcDateTime)
+                    .ToString("yyyy-MM-dd");
+            }
             if (dto.AvatarDataUrl != null)
             {
                 user.AvatarDataUrl = string.IsNullOrWhiteSpace(dto.AvatarDataUrl)
@@ -96,6 +119,7 @@ namespace SleepyKoala.Api.Controllers
                 CutoffTime = user.Settings.CutoffTime,
                 ThemePreference = user.Settings.ThemePreference,
                 OnboardingCompleted = user.Settings.OnboardingCompleted,
+                TimeZoneId = user.Settings.TimeZoneId,
                 AvatarDataUrl = user.AvatarDataUrl
             });
         }

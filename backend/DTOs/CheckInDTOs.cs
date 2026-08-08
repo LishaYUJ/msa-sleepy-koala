@@ -25,8 +25,9 @@ namespace SleepyKoala.Api.DTOs
 
     public class CheckInHistoryDto
     {
-        public Guid Id { get; set; }
+        public Guid? Id { get; set; }
         public required string LocalCheckInDate { get; set; }
         public required string Status { get; set; }
+        public bool Recorded { get; set; }
     }
 }

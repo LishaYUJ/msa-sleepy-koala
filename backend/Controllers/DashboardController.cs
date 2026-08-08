@@ -15,15 +15,20 @@ namespace SleepyKoala.Api.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ICheckInService _checkInService;
+        private readonly ISleepCalendarService _sleepCalendar;
 
-        public DashboardController(ApplicationDbContext context, ICheckInService checkInService)
+        public DashboardController(
+            ApplicationDbContext context,
+            ICheckInService checkInService,
+            ISleepCalendarService sleepCalendar)
         {
             _context = context;
             _checkInService = checkInService;
+            _sleepCalendar = sleepCalendar;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetSummary([FromQuery] string? localDate, [FromQuery] string? localTime)
+        public async Task<IActionResult> GetSummary()
         {
             var userId = User.GetUserId();
             if (userId == null) return Unauthorized();
@@ -36,25 +41,8 @@ namespace SleepyKoala.Api.Controllers
 
             if (user == null || user.Settings == null) return NotFound();
 
-            string localDateStr;
-            if (!string.IsNullOrEmpty(localDate) && DateTime.TryParseExact(localDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
-            {
-                localDateStr = localDate;
-            }
-            else
-            {
-                // Fallback: use UTC date when no localDate is provided
-                localDateStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
-            }
-
-            TimeSpan? localTimeSpan = null;
-            if (!string.IsNullOrEmpty(localTime) &&
-                TimeSpan.TryParse(localTime, out var parsedLocalTime) &&
-                parsedLocalTime >= TimeSpan.Zero &&
-                parsedLocalTime < TimeSpan.FromDays(1))
-            {
-                localTimeSpan = parsedLocalTime;
-            }
+            var calendar = _sleepCalendar.GetContext(user.Settings);
+            var localDateStr = calendar.CurrentSleepDate.ToString("yyyy-MM-dd");
 
             var todayCheckIn = await _context.CheckIns
                 .FirstOrDefaultAsync(c => c.UserId == userId.Value && c.LocalCheckInDate == localDateStr);
@@ -89,16 +77,14 @@ namespace SleepyKoala.Api.Controllers
                     .ToDictionaryAsync(c => c.LocalCheckInDate, c => c.Status);
 
                 if (todayCheckIn == null &&
-                    localTimeSpan.HasValue &&
-                    localTimeSpan.Value > new TimeSpan(2, 0, 0) &&
-                    localTimeSpan.Value < new TimeSpan(21, 0, 0))
+                    calendar.CurrentSleepDate <= calendar.LastClosedSleepDate)
                 {
                     inferredTodayStatus = "missing";
                     fatigueScore += 2;
                 }
 
                 var dateToCheck = todayDate.AddDays(-1);
-                var registerDate = DateOnly.FromDateTime(user.CreatedAtUtc);
+                var registerDate = _sleepCalendar.GetTrackingStartSleepDate(user.Settings, user.CreatedAtUtc);
 
                 for (int i = 0; i < 30; i++)
                 {

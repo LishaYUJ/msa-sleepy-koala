@@ -15,6 +15,9 @@ namespace SleepyKoala.Api.DTOs
 
         public bool OnboardingCompleted { get; set; }
 
+        [Required, StringLength(100)]
+        public string TimeZoneId { get; set; } = "UTC";
+
         [StringLength(700000)]
         public string? AvatarDataUrl { get; set; }
     }

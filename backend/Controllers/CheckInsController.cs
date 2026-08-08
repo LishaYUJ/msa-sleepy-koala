@@ -15,11 +15,16 @@ namespace SleepyKoala.Api.Controllers
     {
         private readonly ICheckInService _checkInService;
         private readonly ApplicationDbContext _context;
+        private readonly ISleepCalendarService _sleepCalendar;
 
-        public CheckInsController(ICheckInService checkInService, ApplicationDbContext context)
+        public CheckInsController(
+            ICheckInService checkInService,
+            ApplicationDbContext context,
+            ISleepCalendarService sleepCalendar)
         {
             _checkInService = checkInService;
             _context = context;
+            _sleepCalendar = sleepCalendar;
         }
 
         [HttpPost]
@@ -54,33 +59,76 @@ namespace SleepyKoala.Api.Controllers
             var userId = User.GetUserId();
             if (userId == null) return Unauthorized();
 
-            var checkIns = await _context.CheckIns
-                .Where(c => c.UserId == userId.Value)
-                .OrderByDescending(c => c.LocalCheckInDate)
-                .Select(c => new CheckInHistoryDto
+            var user = await _context.Users
+                .Include(u => u.Settings)
+                .Include(u => u.CheckIns)
+                .FirstOrDefaultAsync(u => u.Id == userId.Value);
+
+            if (user == null || user.Settings == null) return NotFound();
+
+            var calendar = _sleepCalendar.GetContext(user.Settings);
+            var checkInsByDate = user.CheckIns
+                .Where(c => DateOnly.TryParseExact(c.LocalCheckInDate, "yyyy-MM-dd", out _))
+                .ToDictionary(c => c.LocalCheckInDate);
+
+            DateOnly trackingStart;
+            if (DateOnly.TryParseExact(user.Settings.TrackingStartSleepDate, "yyyy-MM-dd", out var storedStart))
+            {
+                trackingStart = storedStart;
+            }
+            else
+            {
+                var firstRecordedDate = checkInsByDate.Keys
+                    .Select(date => DateOnly.ParseExact(date, "yyyy-MM-dd"))
+                    .OrderBy(date => date)
+                    .FirstOrDefault();
+                trackingStart = firstRecordedDate == default
+                    ? calendar.CurrentSleepDate
+                    : firstRecordedDate;
+            }
+
+            var latestRecordedDate = checkInsByDate.Keys
+                .Select(date => DateOnly.ParseExact(date, "yyyy-MM-dd"))
+                .OrderByDescending(date => date)
+                .FirstOrDefault();
+            var lastDate = latestRecordedDate > calendar.LastClosedSleepDate
+                ? latestRecordedDate
+                : calendar.LastClosedSleepDate;
+
+            // Keep the response bounded while covering far more than the current UI needs.
+            if (lastDate.DayNumber - trackingStart.DayNumber > 729)
+            {
+                trackingStart = lastDate.AddDays(-729);
+            }
+
+            var history = new List<CheckInHistoryDto>();
+            for (var sleepDate = trackingStart; sleepDate <= lastDate; sleepDate = sleepDate.AddDays(1))
+            {
+                var dateKey = sleepDate.ToString("yyyy-MM-dd");
+                if (checkInsByDate.TryGetValue(dateKey, out var checkIn))
                 {
-                    Id = c.Id,
-                    LocalCheckInDate = c.LocalCheckInDate,
-                    Status = c.Status
-                })
-                .ToListAsync();
+                    history.Add(new CheckInHistoryDto
+                    {
+                        Id = checkIn.Id,
+                        LocalCheckInDate = dateKey,
+                        Status = checkIn.Status,
+                        Recorded = true
+                    });
+                }
+                else if (sleepDate <= calendar.LastClosedSleepDate)
+                {
+                    history.Add(new CheckInHistoryDto
+                    {
+                        Id = null,
+                        LocalCheckInDate = dateKey,
+                        Status = "missing",
+                        Recorded = false
+                    });
+                }
+            }
 
-            return Ok(checkIns);
+            return Ok(history.OrderByDescending(item => item.LocalCheckInDate));
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCheckIn(Guid id)
-        {
-            var userId = User.GetUserId();
-            if (userId == null) return Unauthorized();
-
-            var checkIn = await _context.CheckIns.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId.Value);
-            if (checkIn == null) return NotFound();
-
-            _context.CheckIns.Remove(checkIn);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
     }
 }

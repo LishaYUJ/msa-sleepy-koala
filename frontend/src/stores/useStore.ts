@@ -21,9 +21,10 @@ export interface UserSummary {
 }
 
 export interface CheckInHistory {
-  id: string;
+  id: string | null;
   localCheckInDate: string;
   status: string;
+  recorded: boolean;
 }
 
 export interface LeaderRank {
@@ -42,6 +43,7 @@ export interface UserSettingsDto {
   cutoffTime: string;
   themePreference: string;
   onboardingCompleted: boolean;
+  timeZoneId: string;
   avatarDataUrl?: string | null;
 }
 
@@ -71,7 +73,6 @@ interface AppState {
   logout: () => void;
   loadSummary: (localDateString?: string) => Promise<void>;
   performCheckIn: () => Promise<any>;
-  deleteHistoryItem: (id: string, localDateString?: string) => Promise<void>;
   loadHistory: () => Promise<void>;
   loadLeaderboard: () => Promise<void>;
   loadBadges: () => Promise<void>;
@@ -218,15 +219,13 @@ export const useStore = create<AppState>((set, get) => ({
     });
   },
 
-  loadSummary: async (localDateString) => {
+  loadSummary: async (_localDateString) => {
     const { token } = get();
     if (!token) return;
     
     set({ isLoading: true, error: null });
     try {
-      const dateParam = localDateString || getCurrentSleepDateString();
-      const timeParam = getLocalTimeString();
-      const response = await api.get<UserSummary>(`/api/me/summary?localDate=${dateParam}&localTime=${timeParam}`, token);
+      const response = await api.get<UserSummary>('/api/me/summary', token);
       set({ summary: response, isLoading: false });
     } catch (err: any) {
       set({ isLoading: false, error: err.body?.message || err.message });
@@ -251,25 +250,6 @@ export const useStore = create<AppState>((set, get) => ({
       // Reload summary following successful check-in
       await get().loadSummary(response.localCheckInDate || getCurrentSleepDateString());
       return response;
-    } catch (err: any) {
-      set({ isLoading: false, error: err.body?.message || err.message });
-      throw err;
-    }
-  },
-
-  deleteHistoryItem: async (id, localDateString) => {
-    const { token } = get();
-    if (!token) return;
-
-    set({ isLoading: true, error: null });
-    try {
-      await api.delete(`/api/checkins/${id}`, token);
-      set({ isLoading: false });
-      
-      // Reload relevant info
-      const sleepDate = localDateString || getCurrentSleepDateString();
-      await get().loadSummary(sleepDate);
-      await get().loadHistory();
     } catch (err: any) {
       set({ isLoading: false, error: err.body?.message || err.message });
       throw err;

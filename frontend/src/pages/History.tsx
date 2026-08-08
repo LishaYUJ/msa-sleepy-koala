@@ -1,667 +1,244 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  AlertCircle,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  Moon,
-  RefreshCw,
-  Sparkles,
-  Trash2,
-  TrendingUp,
-} from 'lucide-react';
-import { useStore, type CheckInHistory } from '../stores/useStore';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, CircleDashed, Clock3, Moon, Sparkles } from 'lucide-react';
+import { useStore } from '../stores/useStore';
 
-type HistoryFilter = 'all' | 'onTime' | 'late';
+const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const formatHistoryDate = (dateString: string) => {
-  const [year, month, day] = dateString.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-
-  if (Number.isNaN(date.getTime())) return dateString;
-
-  return {
-    weekday: date.toLocaleDateString('en-US', { weekday: 'short' }),
-    date: date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-  };
+const toDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
-const getMonthLabel = (dateString: string) => {
+const parseHistoryDate = (dateString: string) => {
   const [year, month, day] = dateString.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  if (Number.isNaN(date.getTime())) return 'Earlier';
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return new Date(year, month - 1, day);
 };
+
+type JourneyStatus = 'onTime' | 'late' | 'missing';
+
+const JourneyStatusMark: React.FC<{ status: JourneyStatus; compact?: boolean }> = ({ status, compact = false }) => (
+  <span className={`journey-status-mark ${status === 'onTime' ? 'on-time' : status}${compact ? ' compact' : ''}`} aria-hidden="true">
+    {status === 'onTime' ? (
+      <><Circle className="journey-status-main" fill="currentColor" /><Check className="journey-status-badge" /></>
+    ) : status === 'late' ? (
+      <><Moon className="journey-status-main" /><Clock3 className="journey-status-badge" /></>
+    ) : (
+      <CircleDashed className="journey-status-main" />
+    )}
+  </span>
+);
 
 export const History: React.FC = () => {
-  const { history, loadHistory, deleteHistoryItem, isLoading, error, setError } = useStore();
-  const [filter, setFilter] = useState<HistoryFilter>('all');
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const { history, loadHistory, isLoading, error, setError } = useStore();
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
 
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
 
-  const onTimeCount = history.filter((item) => item.status === 'onTime').length;
-  const lateCount = history.length - onTimeCount;
-  const onTimeRate = history.length ? Math.round((onTimeCount / history.length) * 100) : 0;
+  const monthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`;
+  const monthLabel = selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const isCurrentMonth = selectedMonth.getFullYear() === now.getFullYear()
+    && selectedMonth.getMonth() === now.getMonth();
 
-  const groupedHistory = useMemo(() => {
-    const visibleItems = filter === 'all'
-      ? history
-      : history.filter((item) => item.status === filter);
+  const monthRecords = useMemo(
+    () => history
+      .filter((item) => item.localCheckInDate.startsWith(monthKey))
+      .sort((a, b) => b.localCheckInDate.localeCompare(a.localCheckInDate)),
+    [history, monthKey],
+  );
 
-    return visibleItems.reduce<Record<string, CheckInHistory[]>>((groups, item) => {
-      const label = getMonthLabel(item.localCheckInDate);
-      groups[label] = groups[label] || [];
-      groups[label].push(item);
-      return groups;
-    }, {});
-  }, [filter, history]);
+  const recordsByDate = useMemo(
+    () => new Map(monthRecords.map((item) => [item.localCheckInDate, item])),
+    [monthRecords],
+  );
 
-  const visibleCount = Object.values(groupedHistory).reduce((total, items) => total + items.length, 0);
+  const calendarDays = useMemo(() => {
+    const year = selectedMonth.getFullYear();
+    const month = selectedMonth.getMonth();
+    const leadingDays = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cellCount = Math.ceil((leadingDays + daysInMonth) / 7) * 7;
 
-  const handleDelete = async (item: CheckInHistory) => {
-    try {
-      await deleteHistoryItem(item.id, item.localCheckInDate);
-      setPendingDeleteId(null);
-    } catch {
-      // The shared store exposes the backend message in the page alert.
-    }
+    return Array.from({ length: cellCount }, (_, index) => {
+      const day = index - leadingDays + 1;
+      if (day < 1 || day > daysInMonth) return null;
+      const date = new Date(year, month, day);
+      return { day, date, key: toDateKey(date) };
+    });
+  }, [selectedMonth]);
+
+  const bedtimeMomentCount = monthRecords.filter((item) => item.recorded).length;
+  const journeyCopy = bedtimeMomentCount === 0
+    ? 'A quiet month so far. Koala will be here when you are ready tonight.'
+    : `You shared ${bedtimeMomentCount} bedtime ${bedtimeMomentCount === 1 ? 'moment' : 'moments'} with Koala this month.`;
+
+  const changeMonth = (offset: number) => {
+    setSelectedMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
   };
 
-  const handleRetry = () => {
+  const retry = () => {
     setError(null);
     loadHistory();
   };
 
   return (
-    <div className="history-page">
+    <div className="journey-page">
       <style>{`
-        .history-page {
-          width: 100%;
-          color: var(--text-main);
-          display: flex;
-          flex-direction: column;
-          gap: 22px;
-          padding-bottom: 12px;
-        }
-
-        .history-page-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          gap: 20px;
-        }
-
-        .history-title-wrap {
-          display: flex;
-          align-items: flex-start;
-          gap: 14px;
-        }
-
-        .history-title-icon {
-          width: 44px;
-          height: 44px;
-          border-radius: 15px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #f3edd7;
-          background: linear-gradient(145deg, #4b4d96, #2e326d);
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          box-shadow: 0 8px 24px rgba(75, 77, 150, 0.35);
-          flex-shrink: 0;
-        }
-
-        .history-page h1 {
-          margin: 0 0 5px;
-          color: #f3edd7;
-          font-size: clamp(1.7rem, 2.6vw, 2.15rem);
-          font-weight: 600;
-        }
-
-        .history-subtitle {
-          color: var(--text-muted);
-          line-height: 1.5;
-          font-size: 0.96rem;
-        }
-
-        .history-refresh-btn {
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          background: rgba(20, 26, 54, 0.7);
-          color: #dce2f5;
-          border-radius: 13px;
-          padding: 10px 14px;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          cursor: pointer;
-          font: 600 0.86rem var(--font-body);
-          transition: background 0.2s ease, border-color 0.2s ease;
-        }
-
-        .history-refresh-btn:hover:not(:disabled) {
-          background: rgba(40, 49, 92, 0.9);
-          border-color: rgba(129, 140, 248, 0.45);
-        }
-
-        .history-refresh-btn:disabled { opacity: 0.55; cursor: wait; }
-        .history-refresh-btn.loading svg { animation: history-spin 0.8s linear infinite; }
-        @keyframes history-spin { to { transform: rotate(360deg); } }
-
-        .history-stats-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 16px;
-        }
-
-        .history-stat-card {
-          min-height: 112px;
-          padding: 20px 22px;
-          border-radius: 21px;
-          background: rgba(20, 26, 54, 0.66);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
-          backdrop-filter: blur(16px);
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-
-        .history-stat-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(129, 140, 248, 0.13);
-          color: #a5b4fc;
-          flex-shrink: 0;
-        }
-
-        .history-stat-card:nth-child(2) .history-stat-icon {
-          background: rgba(78, 168, 129, 0.14);
-          color: #7ad0aa;
-        }
-
-        .history-stat-card:nth-child(3) .history-stat-icon {
-          background: rgba(251, 191, 36, 0.12);
-          color: #fbbf24;
-        }
-
-        .history-stat-copy { display: flex; flex-direction: column; gap: 2px; }
-        .history-stat-value { font: 600 1.7rem var(--font-serif); color: #f3edd7; }
-        .history-stat-label { color: var(--text-muted); font-size: 0.84rem; }
-
-        .history-log-card {
-          background: rgba(24, 30, 56, 0.6);
-          backdrop-filter: blur(16px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 28px;
-          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
-          color: #f3edd7;
-          overflow: hidden;
-        }
-
-        .history-log-toolbar {
-          padding: 22px 26px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(0, 0, 0, 0.15);
-        }
-
-        .history-log-title {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font: 600 1.25rem var(--font-serif);
-        }
-
-        .history-filter-group {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 6px;
-          border-radius: 16px;
-          background: rgba(0, 0, 0, 0.25);
-          box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .history-filter-btn {
-          border: 0;
-          border-radius: 12px;
-          padding: 8px 14px;
-          color: #8e9bb4;
-          background: transparent;
-          cursor: pointer;
-          font: 600 0.85rem var(--font-body);
-          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .history-filter-btn.active {
-          background: rgba(129, 140, 248, 0.2);
-          color: #a5b4fc;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-          transform: translateY(-1px);
-        }
-
-        .history-error {
-          margin: 18px 24px 0;
-          border-radius: 16px;
-          padding: 14px 18px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          background: rgba(239, 68, 68, 0.15);
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          color: #fca5a5;
-          font-size: 0.9rem;
-        }
-
-        .history-error button {
-          border: 0;
-          background: rgba(239, 68, 68, 0.2);
-          padding: 6px 12px;
-          border-radius: 8px;
-          color: #fecaca;
-          font-weight: 700;
-          cursor: pointer;
-          transition: background 0.2s ease;
-        }
-
-        .history-error button:hover {
-          background: rgba(239, 68, 68, 0.3);
-        }
-
-        .history-log-body { padding: 12px 26px 26px; }
-        .history-month-group { padding-top: 16px; }
-
-        .history-month-label {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin: 0 0 12px 6px;
-          color: #8e9bb4;
-          font-size: 0.82rem;
-          font-weight: 700;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-        }
-
-        .history-records { display: flex; flex-direction: column; gap: 12px; }
-
-        .history-record {
-          min-height: 72px;
-          background: rgba(30, 36, 66, 0.7);
-          border: 2px solid rgba(255, 255, 255, 0.05);
-          border-bottom-width: 4px;
-          border-radius: 20px;
-          padding: 14px 18px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 14px;
-          transition: all 0.15s ease;
-        }
-
-        .history-record.on-time {
-          border-color: rgba(88, 204, 2, 0.3);
-          border-bottom-color: rgba(88, 204, 2, 0.5);
-        }
-
-        .history-record.late {
-          border-color: rgba(255, 150, 0, 0.3);
-          border-bottom-color: rgba(255, 150, 0, 0.5);
-        }
-
-        .history-record:hover {
-          transform: translateY(2px);
-          border-bottom-width: 2px;
-          margin-bottom: 2px;
-          background: rgba(36, 43, 76, 0.9);
-        }
-
-        .history-date-block { display: flex; align-items: center; gap: 14px; }
-
-        .history-weekday {
-          width: 46px;
-          height: 46px;
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(255, 255, 255, 0.08);
-          color: #f3edd7;
-          font-size: 0.85rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05);
-        }
-
-        .history-record.on-time .history-weekday {
-          background: rgba(88, 204, 2, 0.15);
-          color: #a7f3d0;
-        }
-
-        .history-record.late .history-weekday {
-          background: rgba(255, 150, 0, 0.15);
-          color: #fde68a;
-        }
-
-        .history-date-copy { display: flex; flex-direction: column; gap: 4px; }
-        .history-date-main { font-weight: 700; color: #f3edd7; font-size: 1.05rem; }
-        .history-date-caption { font-size: 0.8rem; color: #8e9bb4; font-weight: 500; }
-        .history-record-actions { display: flex; align-items: center; gap: 12px; }
-
-        .history-status {
-          min-width: 95px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          padding: 8px 12px;
-          border-radius: 12px;
-          font-size: 0.78rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-
-        .history-status.on-time { 
-          color: #fff; 
-          background: #58cc02; 
-          border-bottom: 3px solid #58a700;
-        }
-        .history-status.late { 
-          color: #fff; 
-          background: #ff9600; 
-          border-bottom: 3px solid #cc7800;
-        }
-
-        .history-delete-btn {
-          width: 38px;
-          height: 38px;
-          border: 0;
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.05);
-          color: #8e9bb4;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .history-delete-btn:hover { 
-          color: #fca5a5; 
-          background: rgba(239, 68, 68, 0.2); 
-          transform: scale(1.05);
-        }
-        .history-delete-btn:disabled { opacity: 0.45; cursor: wait; transform: none; }
-
-        .history-confirm {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: #fca5a5;
-          font-size: 0.85rem;
-          font-weight: 700;
-        }
-
-        .history-confirm button {
-          border: 0;
-          border-radius: 10px;
-          padding: 8px 12px;
-          cursor: pointer;
-          font: 700 0.8rem var(--font-body);
-          transition: transform 0.1s ease;
-        }
-
-        .history-confirm button:active {
-          transform: scale(0.95);
-        }
-
-        .history-confirm-delete { 
-          background: #ef4444; 
-          color: white; 
-          border-bottom: 3px solid #b91c1c;
-        }
-        .history-confirm-cancel { 
-          background: rgba(255, 255, 255, 0.1); 
-          color: #f3edd7; 
-        }
-
-        .history-empty {
-          min-height: 260px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          color: #8e9bb4;
-          padding: 40px 20px;
-        }
-
-        .history-empty-icon {
-          width: 72px;
-          height: 72px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 24px;
-          color: #818cf8;
-          background: rgba(129, 140, 248, 0.15);
-          margin-bottom: 18px;
-          box-shadow: inset 0 2px 10px rgba(129, 140, 248, 0.1);
-        }
-
-        .history-empty h2 { font-size: 1.25rem; margin-bottom: 8px; color: #f3edd7; }
-        .history-empty p { font-size: 0.95rem; max-width: 340px; line-height: 1.6; }
-
-        .history-skeleton-list { padding: 24px 26px; display: grid; gap: 12px; }
-        .history-skeleton {
-          height: 72px;
-          border-radius: 20px;
-          background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
-          background-size: 200% 100%;
-          animation: history-shimmer 1.5s infinite linear;
-        }
-        @keyframes history-shimmer { to { background-position: -200% 0; } }
-
-        @media (max-width: 800px) {
-          .history-page { padding-top: 56px; gap: 18px; }
-          .history-page-header { align-items: flex-start; }
-          .history-stats-grid { grid-template-columns: 1fr; gap: 10px; }
-          .history-stat-card { min-height: 82px; padding: 14px 16px; }
-          .history-log-toolbar { align-items: flex-start; flex-direction: column; }
-          .history-filter-group { width: 100%; }
-          .history-filter-btn { flex: 1; }
-        }
-
-        @media (max-width: 520px) {
-          .history-page-header { flex-direction: column; }
-          .history-refresh-btn { align-self: stretch; justify-content: center; }
-          .history-log-toolbar, .history-log-body { padding-left: 14px; padding-right: 14px; }
-          .history-record { align-items: flex-start; }
-          .history-record-actions { flex-direction: column; align-items: flex-end; }
-          .history-confirm { flex-wrap: wrap; justify-content: flex-end; max-width: 130px; }
-          .history-status { min-width: 82px; }
-        }
+        .journey-page { width:100%; max-width:1080px; margin:0 auto; padding:20px 24px 88px; color:var(--text-main); }
+        .journey-header { display:flex; align-items:flex-start; gap:15px; margin-bottom:30px; }
+        .journey-title-icon { display:grid; flex:0 0 auto; width:46px; height:46px; place-items:center; border-radius:15px; color:#c7ccff; background:rgba(129,140,248,.13); border:1px solid rgba(165,180,252,.16); box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
+        .journey-header h1 { margin:0 0 7px; color:#f3edd7; font-size:clamp(1.85rem,3vw,2.5rem); line-height:1.05; font-weight:600; }
+        .journey-header p { margin:0; color:var(--text-muted); line-height:1.55; }
+        .journey-calendar-shell { padding:clamp(18px,3vw,30px); border-radius:26px; background:rgba(8,11,28,.5); border:1px solid rgba(165,180,252,.1); box-shadow:0 20px 48px rgba(5,7,22,.28), inset 0 1px 0 rgba(255,255,255,.025); backdrop-filter:blur(16px); }
+        .journey-month-bar { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:23px; }
+        .journey-month-copy h2 { margin:0 0 6px; color:#f3edd7; font:600 clamp(1.25rem,2vw,1.55rem) var(--font-serif); }
+        .journey-month-copy p { margin:0; color:#a4afc5; font-size:.92rem; line-height:1.5; }
+        .journey-legend { display:flex; flex-wrap:wrap; gap:10px 18px; margin:18px 0 16px; color:#8e9bb4; font-size:.78rem; }
+        .journey-legend-item { display:inline-flex; align-items:center; gap:7px; }
+        .journey-month-controls { display:flex; gap:8px; }
+        .journey-month-btn { display:grid; width:40px; height:40px; place-items:center; border-radius:13px; border:1px solid rgba(165,180,252,.12); color:#b8c0e2; background:rgba(129,140,248,.07); cursor:pointer; transition:background .2s ease,color .2s ease,transform .2s ease; }
+        .journey-month-btn:hover:not(:disabled) { color:#f3edd7; background:rgba(129,140,248,.16); transform:translateY(-1px); }
+        .journey-month-btn:active:not(:disabled) { transform:scale(.97); }
+        .journey-month-btn:focus-visible { outline:3px solid rgba(129,140,248,.32); outline-offset:2px; }
+        .journey-month-btn:disabled { opacity:.28; cursor:not-allowed; }
+        .journey-weekdays,.journey-calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:7px; }
+        .journey-weekday { padding:0 0 8px; color:#707c98; font-size:.72rem; font-weight:700; text-align:center; }
+        .journey-day { position:relative; min-height:76px; padding:9px; border-radius:15px; color:#7f8aa4; background:rgba(255,255,255,.018); border:1px solid transparent; }
+        .journey-day.empty { background:transparent; }
+        .journey-day.today { border-color:rgba(129,140,248,.28); }
+        .journey-day.future { opacity:.34; }
+        .journey-day-number { display:block; font-size:.78rem; font-weight:650; font-variant-numeric:tabular-nums; }
+        .journey-day-moon { position:absolute; inset:50% auto auto 50%; display:grid; width:38px; height:38px; place-items:center; transform:translate(-50%,-38%); }
+        .journey-day.on-time { color:#c7ccff; background:rgba(129,140,248,.075); }
+        .journey-day.late { color:#cab6d3; background:rgba(184,154,199,.055); }
+        .journey-day.missing { color:#73809d; background:rgba(104,116,148,.035); }
+        .journey-status-mark { position:relative; display:inline-grid; width:42px; height:42px; place-items:center; flex:0 0 auto; }
+        .journey-status-main { width:30px; height:30px; stroke-width:1.8; }
+        .journey-status-badge { position:absolute; right:0; bottom:1px; width:16px; height:16px; padding:3px; border-radius:50%; stroke-width:2.8; background:#111631; box-shadow:0 0 0 2px #111631; }
+        .journey-status-mark.on-time { color:#cfd4ff; filter:drop-shadow(0 0 8px rgba(129,140,248,.42)); }
+        .journey-status-mark.on-time .journey-status-main { stroke-width:1.2; }
+        .journey-status-mark.on-time .journey-status-badge { color:#6f7be8; }
+        .journey-status-mark.late { color:#d0b3da; }
+        .journey-status-mark.late .journey-status-main { width:33px; height:33px; stroke-width:2.2; }
+        .journey-status-mark.late .journey-status-badge { color:#c0a1cc; }
+        .journey-status-mark.missing { color:#68748f; }
+        .journey-status-mark.missing .journey-status-main { width:31px; height:31px; stroke-width:1.6; }
+        .journey-status-mark.compact { width:25px; height:25px; }
+        .journey-status-mark.compact .journey-status-main { width:20px; height:20px; }
+        .journey-status-mark.compact .journey-status-badge { right:-1px; bottom:-1px; width:11px; height:11px; padding:2px; box-shadow:0 0 0 1px #111631; }
+        .journey-error { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:18px; padding:13px 15px; border-radius:14px; color:#e2c1ce; background:rgba(190,122,151,.08); border:1px solid rgba(217,139,154,.15); }
+        .journey-error button { padding:7px 11px; border-radius:10px; border:1px solid rgba(217,139,154,.2); color:#f0d4df; background:rgba(190,122,151,.12); cursor:pointer; }
+        .journey-nights { margin-top:34px; }
+        .journey-nights-heading { display:flex; align-items:center; gap:9px; margin-bottom:15px; color:#f3edd7; font:600 1.25rem var(--font-serif); }
+        .journey-nights-heading svg { color:#a5b4fc; }
+        .journey-list { display:flex; flex-direction:column; }
+        .journey-entry { display:grid; grid-template-columns:52px minmax(0,1fr) auto; align-items:center; gap:16px; min-height:84px; padding:15px 6px; border-bottom:1px solid rgba(165,180,252,.08); }
+        .journey-entry:first-child { border-top:1px solid rgba(165,180,252,.08); }
+        .journey-entry-symbol { display:grid; width:46px; height:46px; place-items:center; border-radius:15px; color:#c7ccff; background:rgba(129,140,248,.1); border:1px solid rgba(165,180,252,.12); }
+        .journey-entry.late .journey-entry-symbol { color:#d7c0df; background:rgba(184,154,199,.08); border-color:rgba(184,154,199,.12); }
+        .journey-entry.missing .journey-entry-symbol { color:#77839e; background:rgba(104,116,148,.055); border-color:rgba(104,116,148,.1); }
+        .journey-entry-copy h3 { margin:0 0 4px; color:#ece8df; font:600 1rem var(--font-body); }
+        .journey-entry-copy p { margin:0; color:#8e9bb4; font-size:.88rem; line-height:1.45; }
+        .journey-entry-state { color:#aab2d9; font-size:.77rem; font-weight:700; white-space:nowrap; }
+        .journey-entry.late .journey-entry-state { color:#bfa8ca; }
+        .journey-entry.missing .journey-entry-state { color:#77839e; }
+        .journey-empty { min-height:220px; display:grid; place-items:center; padding:32px 20px; text-align:center; color:#8e9bb4; }
+        .journey-empty-inner { max-width:360px; }
+        .journey-empty-icon { display:grid; width:64px; height:64px; margin:0 auto 16px; place-items:center; border-radius:21px; color:#a5b4fc; background:rgba(129,140,248,.1); }
+        .journey-empty h3 { margin:0 0 8px; color:#f3edd7; font:600 1.2rem var(--font-serif); }
+        .journey-empty p { margin:0; line-height:1.55; }
+        .journey-skeleton { height:84px; border-bottom:1px solid rgba(165,180,252,.08); background:linear-gradient(90deg,transparent,rgba(165,180,252,.045),transparent); background-size:200% 100%; animation:journey-shimmer 1.5s linear infinite; }
+        @keyframes journey-shimmer { to { background-position:-200% 0; } }
+        @media (max-width:768px) { .journey-page { padding:62px 16px 92px; } .journey-header { margin-bottom:22px; } .journey-calendar-shell { padding:17px 12px 14px; border-radius:22px; } .journey-month-bar { align-items:flex-start; } .journey-month-copy p { max-width:230px; } .journey-legend { gap:8px 12px; } .journey-weekdays,.journey-calendar-grid { gap:4px; } .journey-day { min-height:58px; padding:6px; border-radius:12px; } .journey-day-moon { width:31px; height:31px; } .journey-day-moon .journey-status-main { width:23px; height:23px; } .journey-day-moon .journey-status-badge { width:12px; height:12px; padding:2px; } }
+        @media (max-width:480px) { .journey-title-icon { width:40px; height:40px; border-radius:13px; } .journey-month-copy p { font-size:.82rem; max-width:190px; } .journey-entry { grid-template-columns:46px minmax(0,1fr); gap:12px; } .journey-entry-state { grid-column:2; margin-top:-10px; } }
+        @media (prefers-reduced-motion:reduce) { .journey-month-btn,.journey-skeleton { transition:none; animation:none; } }
       `}</style>
 
-      <header className="history-page-header">
-        <div className="history-title-wrap">
-          <div className="history-title-icon"><Clock3 size={22} /></div>
-          <div>
-            <h1>Check-in History</h1>
-            <p className="history-subtitle">A quiet record of the nights you showed up for better sleep.</p>
-          </div>
+      <header className="journey-header">
+        <div className="journey-title-icon"><Moon size={23} /></div>
+        <div>
+          <h1>Your sleep journey</h1>
+          <p>A gentle look back at the nights you shared with Koala.</p>
         </div>
-        <button
-          type="button"
-          className={`history-refresh-btn ${isLoading ? 'loading' : ''}`}
-          onClick={handleRetry}
-          disabled={isLoading}
-        >
-          <RefreshCw size={16} />
-          Refresh
-        </button>
       </header>
 
-      <section className="history-stats-grid" aria-label="Check-in summary">
-        <article className="history-stat-card">
-          <div className="history-stat-icon"><CalendarDays size={21} /></div>
-          <div className="history-stat-copy">
-            <span className="history-stat-value">{history.length}</span>
-            <span className="history-stat-label">Nights checked in</span>
+      <section className="journey-calendar-shell" aria-labelledby="journey-month-title">
+        <div className="journey-month-bar">
+          <div className="journey-month-copy">
+            <h2 id="journey-month-title">{monthLabel}</h2>
+            <p>{journeyCopy}</p>
           </div>
-        </article>
-        <article className="history-stat-card">
-          <div className="history-stat-icon"><CheckCircle2 size={21} /></div>
-          <div className="history-stat-copy">
-            <span className="history-stat-value">{onTimeCount}</span>
-            <span className="history-stat-label">On-time nights</span>
-          </div>
-        </article>
-        <article className="history-stat-card">
-          <div className="history-stat-icon"><TrendingUp size={21} /></div>
-          <div className="history-stat-copy">
-            <span className="history-stat-value">{onTimeRate}%</span>
-            <span className="history-stat-label">On-time rate</span>
-          </div>
-        </article>
-      </section>
-
-      <section className="history-log-card">
-        <div className="history-log-toolbar">
-          <div className="history-log-title">
-            <Sparkles size={17} color="#c78d24" />
-            <span>Your sleep log</span>
-          </div>
-          <div className="history-filter-group" aria-label="Filter check-ins">
-            {([
-              ['all', `All ${history.length}`],
-              ['onTime', `On time ${onTimeCount}`],
-              ['late', `Late ${lateCount}`],
-            ] as const).map(([value, label]) => (
-              <button
-                type="button"
-                key={value}
-                className={`history-filter-btn ${filter === value ? 'active' : ''}`}
-                aria-pressed={filter === value}
-                onClick={() => setFilter(value)}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="journey-month-controls">
+            <button className="journey-month-btn" type="button" onClick={() => changeMonth(-1)} aria-label="Previous month"><ChevronLeft size={19} /></button>
+            <button className="journey-month-btn" type="button" onClick={() => changeMonth(1)} disabled={isCurrentMonth} aria-label="Next month"><ChevronRight size={19} /></button>
           </div>
         </div>
 
-        {error && (
-          <div className="history-error" role="alert">
-            <span>{error}</span>
-            <button type="button" onClick={handleRetry}>Try again</button>
-          </div>
-        )}
+        <div className="journey-weekdays" aria-hidden="true">
+          {weekdayLabels.map((label) => <div className="journey-weekday" key={label}>{label}</div>)}
+        </div>
+        <div className="journey-calendar-grid" role="grid" aria-label={`${monthLabel} sleep journey`}>
+          {calendarDays.map((day, index) => {
+            if (!day) return <div className="journey-day empty" key={`empty-${index}`} aria-hidden="true" />;
+            const record = recordsByDate.get(day.key);
+            const status = record?.status as JourneyStatus | undefined;
+            const statusClass = status === 'onTime' ? 'on-time' : status || '';
+            const isToday = day.key === toDateKey(now);
+            const isFuture = day.date.getTime() > new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const stateLabel = status === 'onTime' ? 'rested on time' : status === 'late' ? 'a later night' : status === 'missing' ? 'no check-in recorded' : 'no bedtime moment';
 
+            return (
+              <div className={`journey-day ${statusClass}${isToday ? ' today' : ''}${isFuture ? ' future' : ''}`} key={day.key} role="gridcell" aria-label={`${day.key}, ${stateLabel}`}>
+                <span className="journey-day-number">{day.day}</span>
+                {status && <span className="journey-day-moon"><JourneyStatusMark status={status} /></span>}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="journey-legend" aria-label="Sleep journey legend">
+          <span className="journey-legend-item"><JourneyStatusMark status="onTime" compact /><span>Rested on time</span></span>
+          <span className="journey-legend-item"><JourneyStatusMark status="late" compact /><span>A later night</span></span>
+          <span className="journey-legend-item"><JourneyStatusMark status="missing" compact /><span>No check-in</span></span>
+        </div>
+
+        {error && <div className="journey-error" role="alert"><span>{error}</span><button type="button" onClick={retry}>Try again</button></div>}
+      </section>
+
+      <section className="journey-nights" aria-labelledby="journey-nights-title">
+        <div className="journey-nights-heading" id="journey-nights-title"><Sparkles size={17} /><span>Bedtime moments</span></div>
         {isLoading && history.length === 0 ? (
-          <div className="history-skeleton-list" aria-label="Loading check-in history">
-            <div className="history-skeleton" />
-            <div className="history-skeleton" />
-            <div className="history-skeleton" />
-          </div>
-        ) : visibleCount === 0 ? (
-          <div className="history-empty">
-            <div className="history-empty-icon"><Moon size={28} /></div>
-            <h2>{history.length === 0 ? 'Your sleep log is waiting' : 'No matching check-ins'}</h2>
-            <p>
-              {history.length === 0
-                ? 'Complete your first bedtime check-in and it will appear here.'
-                : 'Try another filter to see more of your bedtime history.'}
-            </p>
+          <div aria-label="Loading sleep journey"><div className="journey-skeleton" /><div className="journey-skeleton" /><div className="journey-skeleton" /></div>
+        ) : monthRecords.length === 0 ? (
+          <div className="journey-empty">
+            <div className="journey-empty-inner">
+              <div className="journey-empty-icon"><CalendarDays size={27} /></div>
+              <h3>Your sleep journey starts tonight</h3>
+              <p>Your next bedtime moment will appear here after you check in.</p>
+            </div>
           </div>
         ) : (
-          <div className="history-log-body">
-            {Object.entries(groupedHistory).map(([month, items]) => (
-              <div className="history-month-group" key={month}>
-                <div className="history-month-label">
-                  <CalendarDays size={13} />
-                  {month}
-                </div>
-                <div className="history-records">
-                  {items.map((item) => {
-                    const formatted = formatHistoryDate(item.localCheckInDate);
-                    const isOnTime = item.status === 'onTime';
-
-                    return (
-                      <article className={`history-record ${isOnTime ? 'on-time' : 'late'}`} key={item.id}>
-                        <div className="history-date-block">
-                          <div className="history-weekday">
-                            {typeof formatted === 'string' ? '—' : formatted.weekday}
-                          </div>
-                          <div className="history-date-copy">
-                            <span className="history-date-main">
-                              {typeof formatted === 'string' ? formatted : formatted.date}
-                            </span>
-                            <span className="history-date-caption">Bedtime check-in</span>
-                          </div>
-                        </div>
-
-                        <div className="history-record-actions">
-                          <span className={`history-status ${isOnTime ? 'on-time' : 'late'}`}>
-                            {isOnTime ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                            {isOnTime ? 'On time' : 'Late'}
-                          </span>
-
-                          {pendingDeleteId === item.id ? (
-                            <div className="history-confirm">
-                              <span>Delete?</span>
-                              <button
-                                type="button"
-                                className="history-confirm-delete"
-                                onClick={() => handleDelete(item)}
-                                disabled={isLoading}
-                              >
-                                Yes
-                              </button>
-                              <button
-                                type="button"
-                                className="history-confirm-cancel"
-                                onClick={() => setPendingDeleteId(null)}
-                                disabled={isLoading}
-                              >
-                                No
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              className="history-delete-btn"
-                              onClick={() => setPendingDeleteId(item.id)}
-                              disabled={isLoading}
-                              aria-label={`Delete check-in from ${item.localCheckInDate}`}
-                              title="Delete check-in"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="journey-list">
+            {monthRecords.map((item) => {
+              const date = parseHistoryDate(item.localCheckInDate);
+              const status = item.status as JourneyStatus;
+              const isOnTime = status === 'onTime';
+              const isMissing = status === 'missing';
+              return (
+                <article className={`journey-entry ${isOnTime ? 'on-time' : isMissing ? 'missing' : 'late'}`} key={item.id || item.localCheckInDate}>
+                  <div className="journey-entry-symbol"><JourneyStatusMark status={status} /></div>
+                  <div className="journey-entry-copy">
+                    <h3>{date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
+                    <p>{isOnTime ? 'Koala settled in before your bedtime goal.' : isMissing ? 'No check-in was recorded before the sleep window closed.' : 'It was a later night, but you still made time to check in.'}</p>
+                  </div>
+                  <span className="journey-entry-state">{isOnTime ? 'Rested on time' : isMissing ? 'No check-in' : 'A later night'}</span>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
