@@ -94,13 +94,16 @@ Response:
   "todayStatus": "onTime",
   "currentStreak": 5,
   "longestStreak": 8,
-  "koalaMood": "calm",
+  "koalaMood": "healthy",
   "cutoffTime": "00:00",
-  "timezone": "Pacific/Auckland",
+  "consecutiveBadDays": 0,
+  "fatigueScore": 100,
+  "fatigueState": "healthy",
   "badges": [
     {
       "name": "First Sleep",
-      "description": "Completed your first on-time bedtime check-in"
+      "description": "Completed your first on-time bedtime check-in",
+      "unlockedAt": "2026-08-01T00:00:00Z"
     }
   ]
 }
@@ -132,7 +135,7 @@ Response:
   "status": "onTime",
   "localCheckInDate": "2026-07-03",
   "currentStreak": 6,
-  "koalaMood": "calm",
+  "koalaMood": "healthy",
   "unlockedBadges": [
     "3-Day Koala Care"
   ]
@@ -145,7 +148,8 @@ Business rules:
 - local date is calculated based on timezone
 - user cannot check in more than once on the same local date
 - check-in is `onTime` if local time is before or equal to cutoff time
-- check-in is `late` if local time is after cutoff time
+- check-in is `late` if local time is after cutoff time but before the check-in window ends at 2:00 AM
+- check-ins completely missed are evaluated automatically as `missing` by the dashboard logic
 
 ---
 
@@ -210,7 +214,9 @@ Response:
 {
   "nickname": "SleepyCat",
   "cutoffTime": "00:00",
-  "timeZoneId": "Pacific/Auckland"
+  "timeZoneId": "Pacific/Auckland",
+  "onboardingCompleted": true,
+  "avatarDataUrl": ""
 }
 ```
 
@@ -228,7 +234,9 @@ Request body:
 {
   "nickname": "KoalaMoon",
   "cutoffTime": "23:45",
-  "timeZoneId": "Pacific/Auckland"
+  "timeZoneId": "Pacific/Auckland",
+  "onboardingCompleted": true,
+  "avatarDataUrl": ""
 }
 ```
 
@@ -238,7 +246,9 @@ Response:
 {
   "nickname": "KoalaMoon",
   "cutoffTime": "23:45",
-  "timeZoneId": "Pacific/Auckland"
+  "timeZoneId": "Pacific/Auckland",
+  "onboardingCompleted": true,
+  "avatarDataUrl": ""
 }
 ```
 

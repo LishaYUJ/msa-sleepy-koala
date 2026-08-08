@@ -16,7 +16,7 @@ Many people intend to sleep earlier but lose track of time at night. Traditional
 
 Instead of asking users to manually submit sleep duration or exact sleep time, the app records a bedtime check-in action.
 
-The user sets a personal bedtime cutoff time, such as 12:00 AM. When they click **“I’m going to sleep”**, the system records the current timestamp and checks whether the action happened before or after the user’s cutoff time based on their local timezone.
+The user sets a personal bedtime cutoff time (between 9:00 PM and 12:00 AM). When they click **“I’m going to sleep”** during the check-in window (9:00 PM to 2:00 AM), the system records the current timestamp and checks whether the action happened before or after the user’s cutoff time based on their local timezone.
 
 The app then updates:
 
@@ -38,17 +38,15 @@ The application applies gamification through:
 
 ## Koala Mood Concept
 
-The koala acts as an emotional feedback layer.
+The koala acts as an emotional feedback layer, driven by a Fatigue Score and Consecutive Bad Days logic.
 
 Example states:
 
-| Koala Mood | Trigger |
+| Koala Fatigue State | Trigger |
 |---|---|
-| Calm Koala | User checks in before the cutoff time |
-| Sleepy Koala | User occasionally checks in late |
-| Panda-eye Koala | User checks in after the cutoff time |
-| Exhausted Koala | User repeatedly checks in late |
-| Champion Koala | User maintains a strong early-sleep streak |
+| Healthy Koala | User checks in on-time, maintaining high fatigue score and 0 bad days |
+| Weak Koala | User checks in late or misses a check-in, increasing bad days |
+| Very Weak Koala | User repeatedly checks in late or misses check-ins, causing severe fatigue |
 
 ## Scope Clarification
 

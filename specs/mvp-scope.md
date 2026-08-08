@@ -18,17 +18,17 @@ The MVP should prioritise a working application over excessive visual polish or 
 
 ### User Settings
 
-- Set bedtime cutoff time, such as 12:00 AM
+- Set bedtime cutoff time (limited to 21:00–00:00)
 - Update nickname
 
 ### Bedtime Check-in
 
-- User clicks **“I’m going to sleep”**
+- User clicks **“I’m going to sleep”** during the check-in window (21:00–02:00)
 - Backend records check-in timestamp in UTC
 - Frontend sends the device's local date and local time to the backend
 - Backend determines whether check-in is on time or late by comparing the submitted local time against the user's configured bedtime
-- Bedtime is limited to evening times (20:00–23:59) for the MVP to avoid cross-midnight ambiguity
 - Prevent duplicate check-ins for the same local date
+- If a check-in is completely missed by 02:00 AM, it is marked as missed.
 
 ### Streak System
 
@@ -36,19 +36,18 @@ The MVP should prioritise a working application over excessive visual polish or 
 - Increase streak after consecutive on-time check-ins
 - Reset or break streak after late or missed check-in
 
-### Koala Mood
+### Koala Fatigue System
 
-- Display koala mood based on recent check-in status and streak
-- Example moods: calm, sleepy, tired, exhausted, champion
+- Display koala illustration and mood based on recent check-in status and fatigue score
+- Example states: healthy, weak, veryWeak
 
 ### Badge System
 
 - Unlock badges for key milestones
-- Example badges:
+- Badges:
   - First Sleep
   - 3-Day Koala Care
   - One Week Calm
-  - Comeback Koala
 
 ### Leaderboard
 
@@ -96,7 +95,6 @@ These features are intentionally excluded from the MVP:
 - Multiplayer gameplay
 - AI-generated sleep advice
 - WebSockets
-- Docker, unless time allows
 - Cypress end-to-end testing, unless time allows
 
 ## MVP Success Criteria

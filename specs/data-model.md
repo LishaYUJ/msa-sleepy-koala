@@ -16,7 +16,10 @@ Stores basic account information.
 | email | string | Unique, private |
 | passwordHash | string | Hashed password only, never store plaintext password |
 | nickname | string | Public display name for leaderboard |
-| createdAt | DateTime | Account creation time |
+| avatarDataUrl | string | Optional base64 or URL for user avatar |
+| currentStreak | int | Current consecutive on-time check-ins |
+| longestStreak | int | Best streak achieved |
+| createdAtUtc | DateTime | Account creation time |
 
 ## Entity: UserSettings
 
@@ -26,9 +29,10 @@ Stores user-specific settings.
 |---|---|---|
 | id | Guid / int | Primary key |
 | userId | Guid / int | Foreign key to User |
-| cutoffTime | TimeOnly / string | User’s bedtime cutoff time, e.g. 00:00 |
-| timezone | string | IANA timezone, e.g. Pacific/Auckland |
-| updatedAt | DateTime | Last settings update time |
+| cutoffTime | TimeOnly / string | User’s bedtime cutoff time, e.g. 22:00 |
+| timeZoneId | string | IANA timezone, e.g. Pacific/Auckland |
+| onboardingCompleted | bool | Whether user finished initial setup |
+| trackingStartSleepDate | string | The first local sleep date when tracking began |
 
 ## Entity: SleepCheckIn
 
@@ -87,22 +91,10 @@ Some values can be calculated rather than stored permanently.
 
 | Value | Source |
 |---|---|
-| currentStreak | Calculated from recent SleepCheckIn records or cached on UserStats |
-| koalaMood | Derived from today’s status and recent streak pattern |
-| leaderboardRank | Derived from current streak ranking |
-
-## Optional Entity: UserStats
-
-If performance or API simplicity becomes important, current streak can be cached in a separate table.
-
-| Field | Type | Notes |
-|---|---|---|
-| id | Guid / int | Primary key |
-| userId | Guid / int | Foreign key to User |
-| currentStreak | int | Current consecutive on-time check-ins |
-| longestStreak | int | Best streak achieved |
-| lastCheckInDate | DateOnly / string | Last local check-in date |
-| updatedAt | DateTime | Last stats update time |
+| currentStreak | Stored on User |
+| longestStreak | Stored on User |
+| koalaMood / fatigueScore | Derived dynamically from recent 30-day SleepCheckIn history on the fly |
+| leaderboardRank | Derived dynamically by sorting users by currentStreak |
 
 ## Leaderboard Privacy Model
 
