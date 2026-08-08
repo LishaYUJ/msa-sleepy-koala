@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useStore } from '../stores/useStore';
 import { GlassCard } from '../components/GlassCard';
-import { Award, Lock, Sparkles } from 'lucide-react';
+import { Lock, Sparkles } from 'lucide-react';
 import { BadgeGraphic } from '../components/BadgeIcons';
 
 export const Badges: React.FC = () => {
