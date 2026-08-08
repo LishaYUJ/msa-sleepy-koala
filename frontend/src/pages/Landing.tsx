@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Moon, Trophy } from 'lucide-react';
 import landingPageBackground from '../assets/landingpage.png';
+import { KoalaLogo } from '../components/KoalaLogo';
 
 export const Landing: React.FC = () => (
   <main className="landing-page">
@@ -27,7 +28,7 @@ export const Landing: React.FC = () => (
       @media (max-width:760px) { .landing-page { padding-top:16px; } .landing-page::before { background-position:88% center; } .landing-page::after { background:linear-gradient(180deg,rgba(7,8,25,.2),rgba(7,8,25,.55)); } .landing-hero { min-height:calc(100dvh - 92px); padding:52px 0 40px; } .landing-copy { padding:24px 18px; border-radius:20px; background:rgba(8,10,30,.42); backdrop-filter:blur(7px); } .landing-copy h1 { font-size:3.2rem; } .landing-steps { grid-template-columns:1fr; } }
     `}</style>
     <nav className="landing-nav" aria-label="Main navigation">
-      <Link className="landing-brand brand-font" to="/"><Moon size={25} aria-hidden="true" />Sleepy Koala</Link>
+      <Link className="landing-brand brand-font" to="/"><KoalaLogo style={{ width: 28, height: 28, color: 'currentColor' }} aria-hidden="true" />Sleepy Koala</Link>
       <Link className="landing-login" to="/login">Log in</Link>
     </nav>
     <section className="landing-hero">

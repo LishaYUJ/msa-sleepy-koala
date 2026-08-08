@@ -4,7 +4,7 @@ import { Home, Trophy, Star, Settings, LogOut, ChevronDown, Clock } from 'lucide
 import { useStore } from '../stores/useStore';
 
 import userAvatar from '../assets/user_avatar.jpg';
-import sidebarLogo from '../assets/sidebar_logo.png';
+import { KoalaLogo } from './KoalaLogo';
 
 export const Navbar: React.FC = () => {
   const { nickname, avatarUrl, logout } = useStore();
@@ -202,7 +202,7 @@ export const Navbar: React.FC = () => {
 
       {/* Left: Brand */}
       <NavLink to="/" className="brand-section">
-        <img src={sidebarLogo} alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+        <KoalaLogo style={{ width: 36, height: 36, color: '#f3edd7' }} />
         <span className="brand-title">Sleepy Koala</span>
       </NavLink>
 

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../stores/useStore';
 import { GlassCard } from '../components/GlassCard';
-import { Sparkles, Moon, Lock, Mail, User } from 'lucide-react';
+import { Sparkles, Lock, Mail, User } from 'lucide-react';
+import { KoalaLogo } from '../components/KoalaLogo';
 
 export const Auth: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -165,7 +166,7 @@ export const Auth: React.FC = () => {
       <GlassCard className="auth-card">
         {/* Brand Logo Header */}
         <div className="auth-logo">
-          <Moon size={32} color="var(--primary)" />
+          <KoalaLogo style={{ width: 36, height: 36, color: 'var(--primary)' }} />
           <h1 className="brand-font">Sleepy Koala</h1>
           <Sparkles size={18} color="var(--secondary)" />
         </div>
