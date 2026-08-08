@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore, getCurrentSleepDateString, getLocalDateString } from '../stores/useStore';
-import { Sparkles, Moon, Check, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, Heart } from 'lucide-react';
+import { Sparkles, Moon, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, Heart } from 'lucide-react';
 import { BadgeGraphic } from '../components/BadgeIcons';
 import {
   formatRemainingTime,
@@ -351,6 +351,13 @@ export const Dashboard: React.FC = () => {
     );
   };
 
+  const renderPostCheckInMessage = () => (
+    <div className="post-checkin-message" role="status" aria-live="polite">
+      <CheckCircle size={17} aria-hidden="true" />
+      <span>{dashboardCopy.actionText}</span>
+    </div>
+  );
+
   const handleCheckIn = async () => {
     try {
       const response = await performCheckIn();
@@ -404,7 +411,7 @@ export const Dashboard: React.FC = () => {
           top: 0;
           left: 0;
           width: 100vw;
-          height: 100vh;
+          height: 100dvh;
           overflow: hidden; /* Hide the slider track */
           padding-top: 80px; /* Accounts for top transparent navbar */
           box-sizing: border-box;
@@ -438,8 +445,9 @@ export const Dashboard: React.FC = () => {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          height: 100%;
-          padding: 0 0 4px;
+          min-height: 100%;
+          height: auto;
+          padding: 12px 0 32px;
           box-sizing: border-box;
         }
 
@@ -460,7 +468,7 @@ export const Dashboard: React.FC = () => {
 
         .pet-sprite-stage.in-bed {
           position: relative;
-          height: min(395px, 58vw);
+          height: min(475px, 70vw);
           margin-bottom: 8px;
         }
 
@@ -474,6 +482,7 @@ export const Dashboard: React.FC = () => {
           width: 100%;
           height: auto;
           object-fit: contain;
+          pointer-events: none;
           filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.4));
           animation: float-pet 6s ease-in-out infinite;
         }
@@ -677,114 +686,40 @@ export const Dashboard: React.FC = () => {
           transform: translateY(1px);
         }
 
-        .checked-sleep-state {
+        .post-checkin-message {
           position: relative;
-          z-index: 4;
-          display: flex;
-          width: 430px;
-          max-width: 90vw;
-          margin-top: -36px;
-          flex-direction: column;
+          z-index: 10;
+          display: inline-flex;
           align-items: center;
-        }
-
-        .checked-sleep-control {
-          display: grid;
-          width: 100%;
-          height: 76px;
-          grid-template-columns: 62px minmax(0, 1fr) 64px;
-          align-items: center;
-          box-sizing: border-box;
-          padding: 6px 8px 6px 12px;
-          border: 1.5px solid rgba(196, 181, 253, 0.58);
-          border-radius: 999px;
-          background: rgba(42, 37, 72, 0.82);
-          box-shadow: 0 18px 42px rgba(10, 8, 28, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(12px);
-        }
-
-        .checked-sleep-moon {
-          display: grid;
-          width: 48px;
-          height: 48px;
-          place-items: center;
-          border-radius: 50%;
-          color: #c4b5fd;
-          background: rgba(124, 102, 178, 0.3);
-        }
-
-        .checked-sleep-copy {
-          display: flex;
-          min-width: 0;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 1px;
-        }
-
-        .checked-sleep-dots {
-          width: 100%;
-          overflow: hidden;
-          color: #9ee3c4;
-          font-size: 0.86rem;
-          letter-spacing: 5px;
-          line-height: 0.8;
-          text-align: center;
-          white-space: nowrap;
-          opacity: 0.82;
-        }
-
-        .checked-sleep-label {
-          color: #a7e7c5;
-          font-family: var(--font-body);
-          font-size: 1rem;
-          font-weight: 650;
-          white-space: nowrap;
-        }
-
-        .checked-sleep-check {
-          display: grid;
-          width: 54px;
-          height: 54px;
-          place-items: center;
-          justify-self: end;
-          border-radius: 50%;
-          color: #203a38;
-          background: linear-gradient(145deg, #c8f4d9, #89d5b5);
-          box-shadow: 0 0 24px rgba(137, 213, 181, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.72);
-        }
-
-        .checked-sleep-note {
-          display: flex;
-          align-items: center;
-          justify-content: center;
           gap: 7px;
-          margin-top: 10px;
-          padding: 3px 10px;
+          max-width: min(420px, 88vw);
+          padding: 9px 16px;
+          border: 1px solid rgba(137, 213, 181, 0.2);
           border-radius: 999px;
-          color: #eee8f5;
-          background: rgba(24, 20, 48, 0.28);
-          backdrop-filter: blur(6px);
+          color: #e4eee8;
+          background: rgba(24, 28, 52, 0.72);
+          box-shadow: 0 10px 26px rgba(8, 9, 24, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
           font-family: var(--font-body);
-          font-size: 0.9rem;
+          font-size: 0.88rem;
           font-weight: 500;
           text-align: center;
           text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
         }
 
-        .checked-sleep-note svg {
+        .post-checkin-message svg {
           flex: none;
           color: #89d5b5;
         }
 
         .checkin-availability-note {
           position: relative;
-          z-index: 4;
+          z-index: 10;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          margin-top: -22px;
+          margin-top: 0;
           padding: 9px 16px;
           border: 1px solid rgba(196, 181, 253, 0.24);
           border-radius: 999px;
@@ -1277,6 +1212,26 @@ export const Dashboard: React.FC = () => {
         }
 
         @media (max-width: 768px) {
+          .view-panel {
+            scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom));
+          }
+
+          .pet-sanctuary-container {
+            min-height: 100%;
+            height: auto;
+            justify-content: flex-start;
+            padding: 18px 0 calc(104px + env(safe-area-inset-bottom));
+          }
+
+          .mobile-sanctuary-layout {
+            flex: none;
+          }
+
+          .mobile-sanctuary-layout > .post-checkin-message,
+          .mobile-sanctuary-layout > .checkin-availability-note {
+            margin-bottom: 18px;
+          }
+
           .mobile-greeting-copy {
             display: flex;
             width: min(340px, 90vw);
@@ -1823,26 +1778,9 @@ export const Dashboard: React.FC = () => {
 
               {/* Desktop Slider Check-In Wrapper */}
               {showRecordedCheckIn ? (
-                <div className="checked-sleep-state">
-                  <div className="checked-sleep-control" aria-label="Bedtime check-in recorded">
-                    <div className="checked-sleep-moon" aria-hidden="true">
-                      <Moon size={25} />
-                    </div>
-                    <div className="checked-sleep-copy">
-                      <span className="checked-sleep-dots" aria-hidden="true">••••••••••••••</span>
-                      <span className="checked-sleep-label">Checked in for tonight</span>
-                    </div>
-                    <div className="checked-sleep-check" aria-hidden="true">
-                      <Check size={30} strokeWidth={2.8} />
-                    </div>
-                  </div>
-                  <div className="checked-sleep-note">
-                    <CheckCircle size={17} />
-                    <span>{dashboardCopy.actionText}</span>
-                  </div>
-                </div>
+                renderPostCheckInMessage()
               ) : canCheckInNow ? (
-                <div className="slider-wrapper" style={{ position: 'relative', zIndex: 4, width: '380px', maxWidth: '90vw', height: '72px', marginTop: '-36px', background: 'rgba(30, 27, 75, 0.6)', border: '1.5px solid rgba(167, 139, 250, 0.3)', borderRadius: '99px', overflow: 'hidden' }}>
+                <div className="slider-wrapper" style={{ position: 'relative', zIndex: 10, width: '380px', maxWidth: '90vw', height: '72px', marginTop: '0', background: 'rgba(30, 27, 75, 0.6)', border: '1.5px solid rgba(167, 139, 250, 0.3)', borderRadius: '99px', overflow: 'hidden' }}>
                   <div className="slider-text" style={{ position: 'absolute', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', color: '#b19df7', fontSize: '1.15rem', gap: '12px', opacity: 1 - (slideVal / 100), fontFamily: 'var(--font-body)', fontWeight: 500 }}>
                      <span style={{ letterSpacing: '4px', opacity: 0.5 }}>········</span>
                      {dashboardCopy.actionText}
@@ -1926,26 +1864,9 @@ export const Dashboard: React.FC = () => {
 
               {/* Themed 3D Primary Check-in CTA Button matching site palette */}
               {showRecordedCheckIn ? (
-                <div className="checked-sleep-state">
-                  <div className="checked-sleep-control" aria-label="Bedtime check-in recorded">
-                    <div className="checked-sleep-moon" aria-hidden="true">
-                      <Moon size={25} />
-                    </div>
-                    <div className="checked-sleep-copy">
-                      <span className="checked-sleep-dots" aria-hidden="true">••••••••••••••</span>
-                      <span className="checked-sleep-label">Tonight Checked In</span>
-                    </div>
-                    <div className="checked-sleep-check" aria-hidden="true">
-                      <Check size={30} strokeWidth={2.8} />
-                    </div>
-                  </div>
-                  <div className="checked-sleep-note">
-                    <CheckCircle size={17} />
-                    <span>{dashboardCopy.actionText}</span>
-                  </div>
-                </div>
+                renderPostCheckInMessage()
               ) : canCheckInNow ? (
-                <div style={{ width: '340px', maxWidth: '90vw', marginTop: '-10px' }}>
+                <div className="mobile-checkin-action" style={{ width: '340px', maxWidth: '90vw', marginTop: '4px', marginBottom: '18px', position: 'relative', zIndex: 10 }}>
                   <button 
                     type="button" 
                     className="duo-btn duo-btn-theme"
