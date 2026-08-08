@@ -24,7 +24,7 @@ export const Landing: React.FC = () => (
       .landing-step svg { color:var(--primary); margin-bottom:16px; }
       .landing-step h2 { font-size:1.12rem; margin-bottom:8px; }
       .landing-step p { color:var(--text-muted); line-height:1.5; }
-      @media (max-width:760px) { .landing-page { padding-top:16px; } .landing-page::before { background-position:62% center; } .landing-page::after { background:linear-gradient(180deg,rgba(7,8,25,.2),rgba(7,8,25,.45)); } .landing-hero { min-height:calc(100dvh - 92px); padding:52px 0 40px; } .landing-copy { padding:24px 18px; border-radius:20px; background:rgba(8,10,30,.42); backdrop-filter:blur(7px); } .landing-copy h1 { font-size:3.2rem; } .landing-steps { grid-template-columns:1fr; } }
+      @media (max-width:760px) { .landing-page { padding-top:16px; } .landing-page::before { background-position:88% center; } .landing-page::after { background:linear-gradient(180deg,rgba(7,8,25,.2),rgba(7,8,25,.55)); } .landing-hero { min-height:calc(100dvh - 92px); padding:52px 0 40px; } .landing-copy { padding:24px 18px; border-radius:20px; background:rgba(8,10,30,.42); backdrop-filter:blur(7px); } .landing-copy h1 { font-size:3.2rem; } .landing-steps { grid-template-columns:1fr; } }
     `}</style>
     <nav className="landing-nav" aria-label="Main navigation">
       <Link className="landing-brand brand-font" to="/"><Moon size={25} aria-hidden="true" />Sleepy Koala</Link>
