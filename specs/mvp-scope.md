@@ -20,7 +20,6 @@ The MVP should prioritise a working application over excessive visual polish or 
 
 - Set bedtime cutoff time, such as 12:00 AM
 - Update nickname
-- Store theme preference if needed
 
 ### Bedtime Check-in
 
@@ -63,7 +62,6 @@ The MVP should prioritise a working application over excessive visual polish or 
 - Responsive UI for desktop and mobile
 - React Router navigation
 - Zustand state management
-- Light/dark theme switching
 - Unit tests for key components
 
 ### Backend
@@ -82,7 +80,7 @@ The MVP will include these advanced requirements:
 
 1. State management library: Zustand
 2. Security measures: password hashing, JWT authorization, and data validation
-3. Theme switching: light/dark mode
+3. Dockerization using Docker and Docker Compose
 
 ## Out of Scope for MVP
 

@@ -138,7 +138,6 @@ The README must clearly list the advanced requirements implemented. The markers 
   - Data validation / sanitisation
   - Rate limiting
 - Use a state management library, e.g. Zustand or Redux
-- Support theme switching, e.g. light/dark mode
 - Dockerize the project using Docker
 - Implement WebSockets
 - End-to-end testing using Cypress
@@ -151,7 +150,7 @@ The README must clearly list the advanced requirements implemented. The markers 
 The recommended top three are:
 
 1. **State management library: Zustand**
-   - Manage auth state, today’s check-in status, streak, koala mood, badges, leaderboard data, and theme preference.
+   - Manage auth state, today’s check-in status, streak, koala mood, badges, and leaderboard data.
 
 2. **Security measures**
    - Password hashing
@@ -159,9 +158,9 @@ The recommended top three are:
    - Data validation / sanitisation
    - README must explain why these matter and how they were implemented.
 
-3. **Theme switching**
-   - Light/dark mode.
-   - Especially relevant because this is a bedtime app used at night.
+3. **Dockerization**
+   - Package the frontend and backend in reproducible containers.
+   - Use Docker Compose to run the full stack with persistent local data and health checks.
 
 ### Advanced feature red lines
 
@@ -373,9 +372,9 @@ Initialize React frontend
 Add Zustand stores
 Build dashboard UI
 Add badge and leaderboard pages
-Add theme switching
 Add backend unit tests
 Add frontend unit tests
+Dockerize frontend and backend
 Update README and specs
 Deploy frontend and backend
 ```

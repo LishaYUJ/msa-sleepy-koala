@@ -51,7 +51,6 @@ namespace SleepyKoala.Api.Controllers
             {
                 Nickname = user.Nickname,
                 CutoffTime = user.Settings.CutoffTime,
-                ThemePreference = user.Settings.ThemePreference,
                 OnboardingCompleted = user.Settings.OnboardingCompleted,
                 TimeZoneId = user.Settings.TimeZoneId,
                 AvatarDataUrl = user.AvatarDataUrl
@@ -95,7 +94,6 @@ namespace SleepyKoala.Api.Controllers
 
             user.Nickname = dto.Nickname.Trim();
             user.Settings.CutoffTime = dto.CutoffTime;
-            user.Settings.ThemePreference = dto.ThemePreference;
             user.Settings.TimeZoneId = dto.TimeZoneId;
             user.Settings.OnboardingCompleted = dto.OnboardingCompleted;
             if (completesOnboarding)
@@ -117,7 +115,6 @@ namespace SleepyKoala.Api.Controllers
             {
                 Nickname = user.Nickname,
                 CutoffTime = user.Settings.CutoffTime,
-                ThemePreference = user.Settings.ThemePreference,
                 OnboardingCompleted = user.Settings.OnboardingCompleted,
                 TimeZoneId = user.Settings.TimeZoneId,
                 AvatarDataUrl = user.AvatarDataUrl

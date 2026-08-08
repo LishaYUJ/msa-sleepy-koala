@@ -28,7 +28,6 @@ Stores user-specific settings.
 | userId | Guid / int | Foreign key to User |
 | cutoffTime | TimeOnly / string | User’s bedtime cutoff time, e.g. 00:00 |
 | timezone | string | IANA timezone, e.g. Pacific/Auckland |
-| themePreference | string | light / dark / system |
 | updatedAt | DateTime | Last settings update time |
 
 ## Entity: SleepCheckIn

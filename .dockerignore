@@ -1,0 +1,19 @@
+.git
+.gitignore
+.agents
+.codex
+.env
+.env.*
+!.env.example
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/coverage
+**/TestResults
+*.db
+*.db-shm
+*.db-wal
+*.log
+ChatGPT Image *.png
+koala_bedtime_0.1s.apng.png

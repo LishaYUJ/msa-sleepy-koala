@@ -41,7 +41,6 @@ export interface BadgesSummary {
 export interface UserSettingsDto {
   nickname: string;
   cutoffTime: string;
-  themePreference: string;
   onboardingCompleted: boolean;
   timeZoneId: string;
   avatarDataUrl?: string | null;
@@ -55,7 +54,6 @@ interface AppState {
   nickname: string | null;
   avatarUrl: string | null;
   onboardingCompleted: boolean | null;
-  theme: 'light' | 'dark';
   isLoading: boolean;
   error: string | null;
 
@@ -67,10 +65,10 @@ interface AppState {
 
   // Actions
   setError: (msg: string | null) => void;
-  initSession: () => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, nickname: string) => Promise<void>;
   logout: () => void;
+  deleteAccount: () => Promise<void>;
   loadSummary: (localDateString?: string) => Promise<void>;
   performCheckIn: () => Promise<any>;
   loadHistory: () => Promise<void>;
@@ -78,7 +76,6 @@ interface AppState {
   loadBadges: () => Promise<void>;
   updateSettings: (dto: UserSettingsDto) => Promise<void>;
   loadSettings: () => Promise<UserSettingsDto | null>;
-  toggleTheme: () => void;
 }
 
 // Helper to get local date string yyyy-MM-dd
@@ -116,8 +113,6 @@ export const useStore = create<AppState>((set, get) => ({
   nickname: localStorage.getItem('nickname'),
   avatarUrl: localStorage.getItem('avatarUrl'),
   onboardingCompleted: null,
-  theme: (localStorage.getItem('theme') as 'light' | 'dark') || 
-         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   isLoading: false,
   error: null,
   summary: null,
@@ -126,11 +121,6 @@ export const useStore = create<AppState>((set, get) => ({
   badges: null,
 
   setError: (msg) => set({ error: msg }),
-
-  initSession: () => {
-    const activeTheme = get().theme;
-    document.documentElement.setAttribute('data-theme', activeTheme);
-  },
 
   login: async (email, password) => {
     set({ isLoading: true, error: null });
@@ -215,8 +205,23 @@ export const useStore = create<AppState>((set, get) => ({
       history: [],
       leaderboard: [],
       badges: null,
+      isLoading: false,
       error: null
     });
+  },
+
+  deleteAccount: async () => {
+    const { token } = get();
+    if (!token) return;
+
+    set({ isLoading: true, error: null });
+    try {
+      await api.delete('/api/account/me', token);
+      get().logout();
+    } catch (err: any) {
+      set({ isLoading: false, error: err.body?.message || err.message });
+      throw err;
+    }
   },
 
   loadSummary: async (_localDateString) => {
@@ -303,26 +308,19 @@ export const useStore = create<AppState>((set, get) => ({
       
       // Store nickname in localStorage
       localStorage.setItem('nickname', response.nickname);
-      localStorage.setItem('theme', response.themePreference);
       if (response.avatarDataUrl) {
         localStorage.setItem('avatarUrl', response.avatarDataUrl);
       } else {
         localStorage.removeItem('avatarUrl');
       }
       
-      // Update local state theme and nickname
+      // Update profile state shared across the application.
       set({ 
         nickname: response.nickname,
         avatarUrl: response.avatarDataUrl || null,
         onboardingCompleted: response.onboardingCompleted,
-        theme: response.themePreference === 'system' 
-          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-          : (response.themePreference as 'light' | 'dark'),
         isLoading: false 
       });
-
-      // Apply theme changes to element
-      document.documentElement.setAttribute('data-theme', get().theme);
       
       // Reload summary in case cutoff is changed
       await get().loadSummary();
@@ -344,13 +342,6 @@ export const useStore = create<AppState>((set, get) => ({
       set({ error: err.body?.message || err.message });
       return null;
     }
-  },
-
-  toggleTheme: () => {
-    const nextTheme = get().theme === 'light' ? 'dark' : 'light';
-    localStorage.setItem('theme', nextTheme);
-    document.documentElement.setAttribute('data-theme', nextTheme);
-    set({ theme: nextTheme });
   }
 }));
 // Helper types

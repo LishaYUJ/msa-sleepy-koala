@@ -169,12 +169,6 @@ const OnboardingRoute: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  const { initSession } = useStore();
-
-  useEffect(() => {
-    initSession();
-  }, [initSession]);
-
   return (
     <BrowserRouter>
       {/* Dynamic Starry Sky Background Layer */}

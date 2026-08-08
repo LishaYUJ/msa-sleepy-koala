@@ -10,9 +10,6 @@ namespace SleepyKoala.Api.DTOs
         [Required]
         public required string CutoffTime { get; set; }
         
-        [Required]
-        public required string ThemePreference { get; set; }
-
         public bool OnboardingCompleted { get; set; }
 
         [Required, StringLength(100)]

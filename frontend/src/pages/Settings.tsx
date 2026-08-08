@@ -3,19 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../stores/useStore';
 import { GlassCard } from '../components/GlassCard';
 import { api } from '../services/api';
-import { LogOut, Sun, Moon, Sparkles, Save, Check, Camera } from 'lucide-react';
+import { LogOut, Save, Check, Camera, Trash2 } from 'lucide-react';
 import userAvatar from '../assets/user_avatar.png';
 
 export const Settings: React.FC = () => {
-  const { nickname, avatarUrl, logout, token } = useStore();
+  const { nickname, avatarUrl, logout, deleteAccount, token } = useStore();
   const [localNickname, setLocalNickname] = useState(nickname || '');
   const [profileAvatar, setProfileAvatar] = useState(avatarUrl || userAvatar);
   const [cutoffTime, setCutoffTime] = useState('22:00');
-  const [themePreference, setThemePreference] = useState('system');
   const [timeZoneId, setTimeZoneId] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'Pacific/Auckland');
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [successLocal, setSuccessLocal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -83,7 +84,6 @@ export const Settings: React.FC = () => {
           setLocalNickname(response.nickname);
           setProfileAvatar(response.avatarDataUrl || userAvatar);
           setCutoffTime(response.cutoffTime);
-          setThemePreference(response.themePreference || 'system');
           setTimeZoneId(response.timeZoneId || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Pacific/Auckland');
         }
       } catch (err: any) {
@@ -129,7 +129,6 @@ export const Settings: React.FC = () => {
       await useStore.getState().updateSettings({
         nickname: localNickname.trim(),
         cutoffTime: cutoffTime,
-        themePreference: themePreference,
         onboardingCompleted: true,
         timeZoneId: timeZoneId,
         avatarDataUrl: profileAvatar === userAvatar ? '' : profileAvatar
@@ -147,6 +146,18 @@ export const Settings: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleDeleteAccount = async () => {
+    setErrorLocal(null);
+    setIsDeleting(true);
+    try {
+      await deleteAccount();
+      navigate('/', { replace: true });
+    } catch (err: any) {
+      setErrorLocal(err.body?.message || err.message || 'Could not delete your account.');
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -283,40 +294,6 @@ export const Settings: React.FC = () => {
           margin-top: 10px;
         }
 
-        .theme-selections {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 10px;
-          margin-top: 4px;
-        }
-
-        .theme-select-btn {
-          border: 1px solid var(--input-border);
-          border-radius: 10px;
-          padding: 10px;
-          background-color: var(--input-bg);
-          color: var(--text-main);
-          font-family: var(--font-title);
-          font-weight: 500;
-          font-size: 0.85rem;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 6px;
-        }
-        
-        .theme-select-btn:hover {
-          background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        .theme-select-btn.active {
-          border-color: var(--primary);
-          background-color: var(--primary-glow);
-          color: var(--primary);
-        }
-
         .logout-danger-card {
           display: flex;
           flex-direction: column;
@@ -327,6 +304,23 @@ export const Settings: React.FC = () => {
 
         .logout-danger-card h3 {
           font-size: 1.1rem;
+        }
+
+        .account-delete-confirmation {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding-top: 14px;
+          border-top: 1px solid rgba(248, 113, 113, 0.18);
+        }
+
+        .account-delete-actions {
+          display: flex;
+          gap: 10px;
+        }
+
+        .account-delete-actions .btn {
+          flex: 1;
         }
       `}</style>
 
@@ -375,9 +369,9 @@ export const Settings: React.FC = () => {
               </div>
             </div>
 
-            {/* Sleep Section & Theme */}
+            {/* Sleep preferences */}
             <div style={{ marginTop: '8px' }}>
-              <h2 className="brand-font section-title">Sleep & Appearance</h2>
+              <h2 className="brand-font section-title">Sleep preferences</h2>
               
               <div className="form-group">
                 <label className="form-label" htmlFor="settingsBedtime">Target Bedtime (21:00-00:00)</label>
@@ -394,35 +388,6 @@ export const Settings: React.FC = () => {
                 </p>
               </div>
 
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Theme Preference</label>
-                <div className="theme-selections">
-                  <button
-                    type="button"
-                    onClick={() => setThemePreference('light')}
-                    className={`theme-select-btn ${themePreference === 'light' ? 'active' : ''}`}
-                  >
-                    <Sun size={18} />
-                    Light Mode
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setThemePreference('dark')}
-                    className={`theme-select-btn ${themePreference === 'dark' ? 'active' : ''}`}
-                  >
-                    <Moon size={18} />
-                    Dark Mode
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setThemePreference('system')}
-                    className={`theme-select-btn ${themePreference === 'system' ? 'active' : ''}`}
-                  >
-                    <Sparkles size={18} />
-                    Use System
-                  </button>
-                </div>
-              </div>
             </div>
 
             <button
@@ -444,6 +409,7 @@ export const Settings: React.FC = () => {
               Sign out of Sleepy Koala. We keep your streaks safe on our records.
             </p>
             <button
+              type="button"
               onClick={handleLogout}
               className="btn btn-secondary"
               style={{ borderColor: 'var(--error)', color: 'var(--error)', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
@@ -451,6 +417,43 @@ export const Settings: React.FC = () => {
               <LogOut size={16} />
               Log Out
             </button>
+
+            {!isDeleteConfirmOpen ? (
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(true)}
+                className="btn btn-secondary"
+                style={{ borderColor: 'rgba(248, 113, 113, 0.45)', color: 'var(--error)', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <Trash2 size={16} />
+                Delete Account
+              </button>
+            ) : (
+              <div className="account-delete-confirmation" role="alert">
+                <p style={{ fontSize: '0.85rem', color: '#fecaca', lineHeight: 1.5 }}>
+                  This permanently deletes your profile, settings, check-ins, and earned badges.
+                </p>
+                <div className="account-delete-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setIsDeleteConfirmOpen(false)}
+                    disabled={isDeleting}
+                  >
+                    Keep Account
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
+                    style={{ background: 'var(--error)' }}
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                  </button>
+                </div>
+              </div>
+            )}
           </GlassCard>
         </div>
       </div>

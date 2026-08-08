@@ -117,7 +117,6 @@ Zustand can be used to manage:
 - koala mood
 - badges
 - leaderboard
-- theme preference
 
 ---
 
@@ -135,7 +134,7 @@ Selected advanced requirements:
 
 1. Zustand state management
 2. Security measures: password hashing, authorization, and data validation
-3. Theme switching
+3. Dockerization
 
 ---
 
@@ -152,22 +151,77 @@ Recommended development order:
 1. low-fidelity Figma and planning documents
 2. backend core models and APIs
 3. frontend pages and Zustand integration
-4. theme switching
-5. unit tests
+4. unit tests
+5. Dockerization
 6. deployment
 7. README, specs, and video preparation
 
 ---
 
-## Future AI Usage to Record
+## Prompt 9: Persistent profile avatar
 
-During development, add more entries for:
+### Prompt excerpt
 
-- API design prompts
-- EF Core model prompts
-- authentication debugging prompts
-- Zustand store design prompts
-- unit test generation prompts
-- UI copywriting prompts
-- README improvement prompts
-- deployment debugging prompts
+> 在后端实现换头像的逻辑，并且让前端跟它相连。
+
+### Key outcome
+
+- Added validated avatar persistence to the authenticated settings API and database.
+- Added image cropping/compression in the browser and avatar display in desktop and mobile navigation.
+- Added integration coverage proving the avatar remains after a new login.
+
+---
+
+## Prompt 10: Koala energy and progress relationship
+
+### Prompt excerpt
+
+> Koala energy 是我们判断它本身是否按时签到的情况的反应……我想要不把它换成一个一个爱心……my progress 要怎么样能够有更有逻辑地跟这个主页上的考拉联系起来？
+
+### Key outcome
+
+- Replaced an ambiguous percentage meter with ten energy hearts.
+- Made the koala itself the entry point to an explanatory energy panel.
+- Kept detailed weekly history in My Progress while showing immediate emotional feedback in the sanctuary.
+
+---
+
+## Prompt 11: Responsive dashboard debugging
+
+### Prompt excerpt
+
+> 手机宽度下的 Koala Energy 需要下滑才能看到全部，而且在手机尺寸下显得有点太大了，有什么方案？
+
+### Key outcome
+
+- Added a compact mobile energy interaction and responsive spacing.
+- Fixed weekly tracker overflow and protected the check-in control from bottom-navigation overlap.
+- Preserved the original greeting until the user intentionally opens koala status.
+
+---
+
+## Prompt 12: Theme requirement replacement
+
+### Prompt excerpt
+
+> 现在 Light 跟 Dark mode 的切换非常不明显，我想把这个去掉。如果把这个去掉，然后再加一个另外的以上这些里面 advanced requirements 的话，你建议加哪一个？
+
+### Key outcome
+
+- Removed theme switching from the UI, Zustand state, API contract, EF model, and documentation.
+- Added a provider-safe migration that removes the obsolete database field.
+- Replaced the selected advanced requirement with Dockerization.
+
+---
+
+## Prompt 13: Assessment compliance audit
+
+### Prompt excerpt
+
+> 检查一下是否要求都满足了，以及帮我上传到 git 目前的更改。
+
+### Key outcome
+
+- Audited the complete official assessment PDF rather than only the advanced-requirement excerpt.
+- Identified and fixed missing Delete CRUD coverage and production Scalar exposure.
+- Expanded the root README with deployment links, gamification, unique features, selected advanced requirements, AI usage, and self-reflection.

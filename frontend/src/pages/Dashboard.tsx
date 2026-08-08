@@ -1862,14 +1862,14 @@ export const Dashboard: React.FC = () => {
               {/* Tap mirrors the desktop hover/focus interaction. */}
               {renderKoalaStatus('mobile')}
 
-              {/* Themed 3D Primary Check-in CTA Button matching site palette */}
+              {/* Primary check-in action */}
               {showRecordedCheckIn ? (
                 renderPostCheckInMessage()
               ) : canCheckInNow ? (
                 <div className="mobile-checkin-action" style={{ width: '340px', maxWidth: '90vw', marginTop: '4px', marginBottom: '18px', position: 'relative', zIndex: 10 }}>
                   <button 
                     type="button" 
-                    className="duo-btn duo-btn-theme"
+                    className="duo-btn duo-btn-primary"
                     onClick={handleCheckIn}
                     disabled={isLoading}
                   >

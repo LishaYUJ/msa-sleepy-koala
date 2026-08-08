@@ -87,13 +87,16 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (builder.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 {
-    // Use the native OpenAPI and Scalar
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
 }
+
+// Scalar is an assessment requirement and remains available in deployed environments.
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.UseHttpsRedirection();
 

@@ -120,7 +120,7 @@ Use Zustand instead of Redux for the frontend state management requirement.
 
 ### Reason
 
-Zustand is lightweight and easier to implement for this project. It is sufficient for managing shared state such as user session, check-in status, streak, koala mood, badges, leaderboard, and theme preference.
+Zustand is lightweight and easier to implement for this project. It is sufficient for managing shared state such as user session, check-in status, streak, koala mood, badges, and leaderboard data.
 
 ### Outcome
 
@@ -136,7 +136,7 @@ Advanced requirements will be included in the MVP architecture from the beginnin
 
 ### Reason
 
-Adding advanced requirements at the end could require major refactoring. Security, state management, and theme switching affect the overall structure of the application.
+Adding advanced requirements at the end could require major refactoring. Security, state management, and containerization affect the overall structure of the application.
 
 ### Outcome
 
@@ -180,4 +180,3 @@ Post-MVP, a specific check-in window (e.g., within 3 hours before/after bedtime)
 ### Outcome
 
 A simpler and more reliable codebase that relies on client-provided local context for check-in evaluation while maintaining correct streak calculations.
-

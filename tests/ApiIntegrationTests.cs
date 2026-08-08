@@ -88,6 +88,18 @@ namespace SleepyKoala.Tests
         }
 
         [Fact]
+        public async Task ScalarDocumentation_IsAvailableOutsideDevelopment()
+        {
+            var client = _factory.CreateClient();
+
+            var scalarResponse = await client.GetAsync("/scalar/v1");
+            var openApiResponse = await client.GetAsync("/openapi/v1.json");
+
+            Assert.Equal(HttpStatusCode.OK, scalarResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, openApiResponse.StatusCode);
+        }
+
+        [Fact]
         public async Task CorsPreflight_AllowsProductionFrontend()
         {
             const string origin = "https://msa-sleepy-koala.vercel.app";
@@ -127,7 +139,6 @@ namespace SleepyKoala.Tests
             Assert.NotNull(settings);
             Assert.Equal(credentials.Nickname, settings!.Nickname);
             Assert.Equal("22:00", settings.CutoffTime);
-            Assert.Equal("system", settings.ThemePreference);
             Assert.Equal("UTC", settings.TimeZoneId);
         }
 
@@ -168,7 +179,6 @@ namespace SleepyKoala.Tests
             {
                 Nickname = credentials.Nickname,
                 CutoffTime = "22:00",
-                ThemePreference = "system",
                 AvatarDataUrl = avatar
             });
 
@@ -201,7 +211,6 @@ namespace SleepyKoala.Tests
             {
                 Nickname = credentials.Nickname,
                 CutoffTime = "22:00",
-                ThemePreference = "system",
                 AvatarDataUrl = "data:image/png;base64,bm90IGFuIGltYWdl"
             });
 
@@ -217,8 +226,7 @@ namespace SleepyKoala.Tests
             var putSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
             {
                 Nickname = "NoToken",
-                CutoffTime = "22:00",
-                ThemePreference = "system"
+                CutoffTime = "22:00"
             });
             var getSummary = await client.GetAsync("/api/me/summary");
             var getBadges = await client.GetAsync("/api/badges/me");
@@ -228,6 +236,7 @@ namespace SleepyKoala.Tests
                 LocalTime = "21:30"
             });
             var getCheckIns = await client.GetAsync("/api/CheckIns/me");
+            var deleteAccount = await client.DeleteAsync("/api/account/me");
 
             Assert.Equal(HttpStatusCode.Unauthorized, getSettings.StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, putSettings.StatusCode);
@@ -235,6 +244,30 @@ namespace SleepyKoala.Tests
             Assert.Equal(HttpStatusCode.Unauthorized, getBadges.StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, postCheckIn.StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, getCheckIns.StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, deleteAccount.StatusCode);
+        }
+
+        [Fact]
+        public async Task AuthenticatedUser_CanDeleteOwnAccountAndRelatedData()
+        {
+            var client = _factory.CreateClient();
+            var credentials = await RegisterUserAsync(client);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credentials.Token);
+
+            var deleteResponse = await client.DeleteAsync("/api/account/me");
+
+            Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+            var settingsAfterDelete = await client.GetAsync("/api/settings/me");
+            Assert.Equal(HttpStatusCode.NotFound, settingsAfterDelete.StatusCode);
+
+            client.DefaultRequestHeaders.Authorization = null;
+            var loginAfterDelete = await client.PostAsJsonAsync("/api/Auth/login", new LoginRequest
+            {
+                Email = credentials.Email,
+                Password = credentials.Password
+            });
+            Assert.Equal(HttpStatusCode.Unauthorized, loginAfterDelete.StatusCode);
         }
 
         [Fact]
@@ -247,32 +280,28 @@ namespace SleepyKoala.Tests
             var updateSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
             {
                 Nickname = "Sleepy Tester",
-                CutoffTime = "21:45",
-                ThemePreference = "dark"
+                CutoffTime = "21:45"
             });
             Assert.Equal(HttpStatusCode.OK, updateSettings.StatusCode);
 
             var invalidSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
             {
                 Nickname = "Sleepy Tester",
-                CutoffTime = "02:00",
-                ThemePreference = "dark"
+                CutoffTime = "02:00"
             });
             Assert.Equal(HttpStatusCode.BadRequest, invalidSettings.StatusCode);
 
             var midnightSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
             {
                 Nickname = "Sleepy Tester",
-                CutoffTime = "00:00",
-                ThemePreference = "dark"
+                CutoffTime = "00:00"
             });
             Assert.Equal(HttpStatusCode.OK, midnightSettings.StatusCode);
 
             updateSettings = await client.PutAsJsonAsync("/api/settings/me", new SettingsDto
             {
                 Nickname = "Sleepy Tester",
-                CutoffTime = "21:45",
-                ThemePreference = "dark"
+                CutoffTime = "21:45"
             });
             Assert.Equal(HttpStatusCode.OK, updateSettings.StatusCode);
 
@@ -281,7 +310,6 @@ namespace SleepyKoala.Tests
             var settings = await settingsResponse.Content.ReadFromJsonAsync<SettingsDto>();
             Assert.Equal("Sleepy Tester", settings!.Nickname);
             Assert.Equal("21:45", settings.CutoffTime);
-            Assert.Equal("dark", settings.ThemePreference);
 
             var summaryBefore = await client.GetAsync("/api/me/summary?localDate=2026-07-16");
             Assert.Equal(HttpStatusCode.OK, summaryBefore.StatusCode);

@@ -57,16 +57,6 @@
   --input-focus-border: #818cf8;
 }
 
-[data-theme='light'] {
-  --bg-app: #080c1d;
-  --text-main: #f3edd7;
-}
-
-[data-theme='dark'] {
-  --bg-app: #080c1d;
-  --text-main: #f3edd7;
-}
-
 /* Reset and Global Styles */
 * {
   box-sizing: border-box;
@@ -512,17 +502,17 @@ a:hover {
   width: 100%;
 }
 
-.duo-btn-theme, .duo-btn-primary {
+.duo-btn-primary {
   background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
   color: #ffffff;
   box-shadow: 0 6px 0 #4338ca, 0 10px 24px rgba(99, 102, 241, 0.45);
 }
 
-.duo-btn-theme:hover:not(:disabled), .duo-btn-primary:hover:not(:disabled) {
+.duo-btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #93c5fd 0%, #818cf8 100%);
 }
 
-.duo-btn-theme:active:not(:disabled), .duo-btn-primary:active:not(:disabled) {
+.duo-btn-primary:active:not(:disabled) {
   transform: translateY(4px);
   box-shadow: 0 2px 0 #4338ca, 0 4px 12px rgba(99, 102, 241, 0.3);
 }
@@ -695,4 +685,3 @@ a:hover {
     display: flex !important;
   }
 }
-

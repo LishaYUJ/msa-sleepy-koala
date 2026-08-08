@@ -2,9 +2,9 @@
 
 ## Overview
 
-The MVP will include three advanced requirements from the MSA Phase 2 Software Stream advanced requirements list.
+The MVP implements three advanced requirements from the MSA Phase 2 Software Stream advanced requirements list.
 
-These advanced features are part of the MVP from the beginning rather than being added at the end.
+These advanced features are integrated into the application architecture and are listed in the repository root README for marking.
 
 ## Advanced Requirement 1: State Management Library
 
@@ -14,7 +14,7 @@ These advanced features are part of the MVP from the beginning rather than being
 
 ### Purpose
 
-Zustand will manage shared frontend state across the React application.
+Zustand manages shared frontend state across the React application.
 
 ### State Managed
 
@@ -27,7 +27,6 @@ Zustand may manage:
 - koala mood
 - badge data
 - leaderboard data
-- theme preference
 
 ### Why Zustand
 
@@ -38,14 +37,13 @@ It helps avoid excessive prop drilling between components such as Dashboard, Koa
 ### Example Use Cases
 
 - After the user checks in, Zustand updates today’s check-in status, current streak, koala mood, and badge data.
-- After the user changes theme, Zustand updates the app-wide theme state.
 - After login, Zustand stores the authenticated user state.
 
 ---
 
 ## Advanced Requirement 2: Security Measures
 
-The project will implement multiple security measures.
+The project implements multiple security measures.
 
 ### Security Measure A: Password Hashing
 
@@ -108,28 +106,31 @@ It does not expose:
 
 ---
 
-## Advanced Requirement 3: Theme Switching
+## Advanced Requirement 3: Dockerization
 
-### Feature
+### Selected Technology
 
-The app supports light and dark mode.
+**Docker and Docker Compose**
 
-### Why It Fits the Project
+### Purpose
 
-Sleepy Koala is a bedtime app, so dark mode is especially relevant because users may interact with it at night.
+Docker packages the React frontend and ASP.NET Core backend into reproducible containers. Docker Compose starts the complete application and its persistent SQLite storage as one stack.
 
-### Implementation Idea
+### Implementation
 
-- Theme state managed by Zustand.
-- User preference can be saved in localStorage or backend UserSettings.
-- Components use theme-aware styling.
-- The Settings page includes a theme toggle.
+- The frontend uses a multi-stage Node and Nginx image.
+- Nginx serves the React SPA and proxies same-origin `/api` requests to the backend container.
+- The backend uses a multi-stage .NET build and runs as the non-root `app` user.
+- Docker Compose supplies non-secret development configuration and persists SQLite data in a named volume.
+- Entity Framework migrations run automatically only when `Database__MigrateOnStartup=true`.
+- Both containers expose health checks, and the frontend waits for a healthy backend.
 
-### User-facing Value
+### Importance
 
-- dark mode provides a more comfortable bedtime experience
-- light mode supports daytime review of streaks, badges, and leaderboard
-- theme switching improves visual polish and user control
+- provides a consistent runtime across development machines
+- reduces setup errors caused by local Node, .NET, or web-server differences
+- verifies that the frontend and backend can be deployed independently
+- keeps local container data between restarts without committing database files
 
 ---
 
@@ -137,8 +138,8 @@ Sleepy Koala is a bedtime app, so dark mode is especially relevant because users
 
 The README should explicitly list the three advanced requirements to be marked:
 
-- [ ] Zustand state management
-- [ ] Security measures: password hashing, authorization, and data validation
-- [ ] Theme switching: light/dark mode
+- [x] Zustand state management
+- [x] Security measures: password hashing, authorization, and data validation
+- [x] Dockerization using Docker and Docker Compose
 
 Only the advanced features explicitly listed in the README should be expected to be marked.

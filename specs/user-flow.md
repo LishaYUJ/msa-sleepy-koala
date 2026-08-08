@@ -93,7 +93,6 @@ The leaderboard does not show email, timezone, exact check-in time, late history
 2. User updates:
    - nickname
    - bedtime cutoff time
-   - theme preference
 3. Frontend sends update request to backend.
 4. Backend validates and saves changes.
 5. Zustand state is updated so the UI reflects the latest settings.

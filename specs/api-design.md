@@ -210,8 +210,7 @@ Response:
 {
   "nickname": "SleepyCat",
   "cutoffTime": "00:00",
-  "timezone": "Pacific/Auckland",
-  "themePreference": "dark"
+  "timeZoneId": "Pacific/Auckland"
 }
 ```
 
@@ -229,8 +228,7 @@ Request body:
 {
   "nickname": "KoalaMoon",
   "cutoffTime": "23:45",
-  "timezone": "Pacific/Auckland",
-  "themePreference": "dark"
+  "timeZoneId": "Pacific/Auckland"
 }
 ```
 
@@ -240,8 +238,7 @@ Response:
 {
   "nickname": "KoalaMoon",
   "cutoffTime": "23:45",
-  "timezone": "Pacific/Auckland",
-  "themePreference": "dark"
+  "timeZoneId": "Pacific/Auckland"
 }
 ```
 
@@ -250,7 +247,6 @@ Validation:
 - nickname must not be empty
 - cutoff time must be valid
 - timezone must be valid
-- theme preference must be light, dark, or system
 
 ---
 

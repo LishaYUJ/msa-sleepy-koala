@@ -101,11 +101,12 @@ The project requires unit tests for both frontend and backend. Testing should fo
 - User can update nickname.
 - Invalid input shows validation error.
 
-### Theme Tests
+### Docker Tests
 
-- Theme toggle switches from light to dark.
-- Theme toggle switches from dark to light.
-- Theme preference is reflected across main components.
+- Docker Compose builds the frontend and backend images.
+- Backend and frontend health checks become healthy.
+- Registration, login, settings, and check-in requests work through `http://localhost:3000/api`.
+- SQLite data persists after `docker compose down` and a subsequent restart.
 
 ## Manual Testing Checklist
 
@@ -118,7 +119,7 @@ Before submission, manually verify:
 - register works on deployed site
 - check-in works on deployed site
 - leaderboard loads on deployed site
-- theme switching works on desktop and mobile
+- Docker Compose starts both healthy services
 - responsive layout works on mobile width
 - README deployment links are correct
 - no secrets are committed to GitHub
