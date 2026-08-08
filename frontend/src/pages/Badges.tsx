@@ -33,6 +33,16 @@ export const Badges: React.FC = () => {
           gap: 24px;
           color: var(--text-main);
           width: 100%;
+          max-width: 1080px;
+          margin: 0 auto;
+          padding: 20px 24px 88px;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+          .badges-view {
+            padding: 62px 16px 92px;
+          }
         }
 
         .badges-header {

@@ -19,8 +19,6 @@ export const Landing: React.FC = () => (
       .landing-kicker { display:inline-flex; align-items:center; gap:8px; color:#c8cdfc; font-size:.92rem; font-weight:700; }
       .landing-actions { display:flex; flex-wrap:wrap; gap:14px; margin-top:30px; }
       .landing-actions .btn { text-decoration:none; min-height:48px; }
-      .landing-secondary { color:var(--text-main); border:1px solid var(--card-border); background:rgba(255,255,255,.04); }
-      .landing-secondary:hover { color:var(--text-main); border-color:rgba(255,255,255,.28); }
       .landing-steps { max-width:1180px; margin:12px auto 0; display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
       .landing-step { min-height:150px; padding:22px; border:1px solid var(--card-border); border-radius:18px; background:rgba(20,26,54,.48); }
       .landing-step svg { color:var(--primary); margin-bottom:16px; }
@@ -39,7 +37,6 @@ export const Landing: React.FC = () => (
         <p>Set a bedtime goal and check in before you sleep. Each small win helps your koala and your habit grow stronger.</p>
         <div className="landing-actions">
           <Link className="btn btn-primary" to="/login?mode=register">Set my goal <ArrowRight size={18} aria-hidden="true" /></Link>
-          <Link className="btn landing-secondary" to="/login">I have an account</Link>
         </div>
       </div>
     </section>

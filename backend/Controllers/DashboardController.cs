@@ -116,7 +116,9 @@ namespace SleepyKoala.Api.Controllers
             }
 
             var mood = _checkInService.CalculateKoalaMood(user, lastCheckIn?.Status ?? "onTime");
-            var fatigueState = fatigueScore >= 6 ? "veryWeak" : fatigueScore >= 3 ? "weak" : "healthy";
+            // The visible 10-heart energy system is the inverse of fatigue:
+            // 0-4 fatigue = healthy, 5-7 = weak, 8+ = very weak.
+            var fatigueState = fatigueScore >= 8 ? "veryWeak" : fatigueScore >= 5 ? "weak" : "healthy";
             if (inferredTodayStatus == "missing")
             {
                 displayStreak = 0;

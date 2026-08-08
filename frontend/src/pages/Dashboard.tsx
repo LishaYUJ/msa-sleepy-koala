@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore, getCurrentSleepDateString, getLocalDateString } from '../stores/useStore';
-import { Sparkles, Moon, Check, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Sparkles, Moon, Check, CheckCircle, X, Award, Flame, AlertCircle, Clock3, ChevronRight, ChevronLeft, Heart } from 'lucide-react';
 import {
   formatRemainingTime,
   isCheckInWindowOpen,
@@ -36,6 +36,7 @@ export const Dashboard: React.FC = () => {
   } | null>(null);
 
   const [slideVal, setSlideVal] = useState(0);
+  const [isKoalaStatusOpen, setIsKoalaStatusOpen] = useState(false);
 
   // Sync state on load
   useEffect(() => {
@@ -190,9 +191,85 @@ export const Dashboard: React.FC = () => {
     : bedtimeState.mode;
   const bedtimeResultCopy = bedtimeResult[bedtimeResultMode];
 
-  // Energy percentage based on fatigueScore (0..6 fatigue -> 100%..30% energy)
+  // One fatigue point removes one of ten visible energy hearts.
   const fatigueScore = summary?.fatigueScore ?? 0;
-  const energyPercent = Math.max(30, Math.min(100, Math.round(100 - (fatigueScore / 6) * 70)));
+  const energyHearts = Math.max(0, Math.min(10, 10 - fatigueScore));
+  const koalaEnergyState = effectiveFatigueState === 'veryWeak'
+    ? { label: 'Needs extra rest', tone: 'very-weak' }
+    : effectiveFatigueState === 'weak'
+      ? { label: 'A little tired', tone: 'weak' }
+      : { label: 'Bright & rested', tone: 'healthy' };
+  const energyReason = fatigueScore === 0
+    ? 'Recent on-time check-ins are keeping Koala bright.'
+    : fatigueScore === 1
+      ? 'A recent late check-in cost Koala 1 energy.'
+      : `Recent late or missed check-ins cost Koala ${Math.min(fatigueScore, 10)} energy.`;
+
+  const renderEnergyHearts = (compact = false) => (
+    <span
+      className={`energy-hearts${compact ? ' compact' : ''}`}
+      role="img"
+      aria-label={`Koala energy: ${energyHearts} out of 10`}
+    >
+      {Array.from({ length: 10 }, (_, index) => (
+        <Heart
+          key={index}
+          className={index < energyHearts ? 'energy-heart filled' : 'energy-heart empty'}
+          size={compact ? 13 : 22}
+          strokeWidth={compact ? 2.2 : 1.8}
+          fill={index < energyHearts ? 'currentColor' : 'none'}
+          aria-hidden="true"
+        />
+      ))}
+    </span>
+  );
+
+  const renderKoalaStatus = (placement: 'desktop' | 'mobile') => {
+    const popoverId = `koala-status-${placement}`;
+    return (
+      <div className={`koala-status-anchor ${isKoalaStatusOpen ? 'is-open' : ''}`}>
+        <button
+          type="button"
+          className={`pet-sprite-stage koala-status-trigger${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}
+          onClick={() => setIsKoalaStatusOpen((isOpen) => !isOpen)}
+          aria-expanded={isKoalaStatusOpen}
+          aria-controls={popoverId}
+          aria-label={`Show Koala status. Energy ${energyHearts} out of 10.`}
+        >
+          <img
+            src={koalaImage}
+            alt={koalaAlt}
+            className={`pet-sprite-image${isInBedAnimation ? ' in-bed' : ''}`}
+          />
+          <span className="koala-energy-peek" aria-hidden="true">
+            <Heart size={14} fill="currentColor" />
+            <span>{energyHearts}/10</span>
+          </span>
+        </button>
+
+        <div id={popoverId} className="koala-status-popover" role="region" aria-label="Koala status details">
+          <div className="koala-status-heading">
+            <span>Koala status</span>
+            <span className={`koala-state-dot ${koalaEnergyState.tone}`} aria-hidden="true" />
+          </div>
+          <strong>{koalaEnergyState.label}</strong>
+          {renderEnergyHearts(true)}
+          <p>{energyReason}</p>
+          <button
+            type="button"
+            className="koala-week-link"
+            onClick={() => {
+              setIsKoalaStatusOpen(false);
+              setCurrentView('progress');
+            }}
+          >
+            See Koala's week
+            <ChevronRight size={16} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const handleCheckIn = async () => {
     try {
@@ -323,6 +400,158 @@ export const Dashboard: React.FC = () => {
           left: 0;
           transform: translateY(-12%);
           animation: none;
+        }
+
+        .koala-status-anchor {
+          position: relative;
+          width: fit-content;
+          max-width: 95vw;
+          flex: none;
+          z-index: 8;
+        }
+
+        .koala-status-trigger {
+          position: relative;
+          padding: 0;
+          border: 0;
+          color: inherit;
+          background: transparent;
+          cursor: pointer;
+          font: inherit;
+        }
+
+        .koala-status-trigger:focus-visible {
+          outline: 2px solid rgba(196, 181, 253, 0.82);
+          outline-offset: 6px;
+          border-radius: 26px;
+        }
+
+        .koala-energy-peek {
+          position: absolute;
+          right: -4px;
+          bottom: 24px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 7px 10px;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 12px;
+          color: #f3a7bb;
+          background: rgba(25, 28, 55, 0.82);
+          box-shadow: 0 10px 26px rgba(5, 7, 20, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+          backdrop-filter: blur(12px);
+          font-family: var(--font-body);
+          font-size: 0.78rem;
+          font-weight: 700;
+          line-height: 1;
+          transition: transform 0.24s ease, border-color 0.24s ease, background 0.24s ease;
+        }
+
+        .koala-status-trigger:hover .koala-energy-peek,
+        .koala-status-trigger:focus-visible .koala-energy-peek,
+        .koala-status-anchor.is-open .koala-energy-peek {
+          transform: translateY(-3px);
+          border-color: rgba(243, 167, 187, 0.38);
+          background: rgba(32, 34, 66, 0.94);
+        }
+
+        .koala-status-popover {
+          position: absolute;
+          top: 50%;
+          left: calc(100% + 24px);
+          width: 284px;
+          padding: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          border-radius: 20px;
+          color: #f3edd7;
+          background: rgba(20, 25, 51, 0.92);
+          box-shadow: 0 22px 54px rgba(5, 7, 20, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(18px);
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transform: translate(-10px, -50%) scale(0.98);
+          transform-origin: left center;
+          transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s ease;
+        }
+
+        .koala-status-anchor:hover .koala-status-popover,
+        .koala-status-anchor:focus-within .koala-status-popover,
+        .koala-status-anchor.is-open .koala-status-popover {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transform: translate(0, -50%) scale(1);
+        }
+
+        .koala-status-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 8px;
+          color: #aeb9cc;
+          font-family: var(--font-body);
+          font-size: 0.76rem;
+          font-weight: 650;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .koala-state-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #73c29d;
+          box-shadow: 0 0 0 5px rgba(115, 194, 157, 0.12);
+        }
+
+        .koala-state-dot.weak {
+          background: #e3b96d;
+          box-shadow: 0 0 0 5px rgba(227, 185, 109, 0.12);
+        }
+
+        .koala-state-dot.very-weak {
+          background: #db8798;
+          box-shadow: 0 0 0 5px rgba(219, 135, 152, 0.12);
+        }
+
+        .koala-status-popover strong {
+          display: block;
+          margin-bottom: 12px;
+          font-family: var(--font-serif);
+          font-size: 1.18rem;
+        }
+
+        .koala-status-popover p {
+          margin: 12px 0 16px;
+          color: #aeb9cc;
+          font-family: var(--font-body);
+          font-size: 0.84rem;
+          line-height: 1.5;
+        }
+
+        .koala-week-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 0;
+          border: 0;
+          color: #c4b5fd;
+          background: transparent;
+          cursor: pointer;
+          font-family: var(--font-body);
+          font-size: 0.84rem;
+          font-weight: 700;
+        }
+
+        .koala-week-link:hover,
+        .koala-week-link:focus-visible {
+          color: #e0d8ff;
+          outline: none;
+        }
+
+        .koala-week-link:active {
+          transform: translateY(1px);
         }
 
         .checked-sleep-state {
@@ -668,6 +897,14 @@ export const Dashboard: React.FC = () => {
           text-shadow: 0 4px 16px rgba(0,0,0,0.4);
         }
 
+        .progress-intro {
+          width: 100%;
+          margin-top: -22px;
+          color: #aeb9cc;
+          font-size: 0.95rem;
+          line-height: 1.5;
+        }
+
         .progress-grid {
           display: grid;
           grid-template-columns: 1fr;
@@ -693,6 +930,81 @@ export const Dashboard: React.FC = () => {
           box-sizing: border-box;
           position: relative;
           overflow: hidden;
+        }
+
+        .koala-care-card {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          grid-column: 1 / -1;
+          align-items: center;
+          gap: 28px;
+          padding: 26px 30px;
+        }
+
+        .koala-care-copy {
+          min-width: 0;
+        }
+
+        .koala-care-kicker {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin-bottom: 8px;
+          color: #aeb9cc;
+          font-family: var(--font-body);
+          font-size: 0.82rem;
+          font-weight: 650;
+        }
+
+        .koala-care-copy h3 {
+          margin-bottom: 7px;
+          font-family: var(--font-serif);
+          font-size: 1.45rem;
+          color: #f3edd7;
+        }
+
+        .koala-care-copy p {
+          max-width: 58ch;
+          color: #aeb9cc;
+          font-size: 0.9rem;
+          line-height: 1.5;
+        }
+
+        .koala-care-energy {
+          display: flex;
+          min-width: 292px;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 10px;
+        }
+
+        .energy-hearts {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: #f0a0b5;
+        }
+
+        .energy-hearts.compact {
+          gap: 3px;
+        }
+
+        .energy-heart {
+          flex: none;
+          filter: drop-shadow(0 3px 8px rgba(240, 160, 181, 0.18));
+        }
+
+        .energy-heart.empty {
+          color: rgba(255, 255, 255, 0.2);
+          filter: none;
+        }
+
+        .koala-energy-count {
+          color: #f3edd7;
+          font-family: var(--font-body);
+          font-size: 0.86rem;
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
         }
 
         /* Countdown Gauge modifications for Dark Card */
@@ -824,31 +1136,50 @@ export const Dashboard: React.FC = () => {
           margin-top: 10px;
         }
         
-        /* Thin Koala Energy Bar (Horizontal) */
-        .energy-horizontal-meter {
-           width: 100%;
-           display: flex;
-           align-items: center;
-           gap: 16px;
-           background: rgba(8, 12, 29, 0.6);
-           padding: 12px 20px;
-           border-radius: 16px;
-           border: 1px solid rgba(255, 255, 255, 0.08);
-           margin-top: 16px;
+        @media (max-width: 1100px) {
+          .koala-status-popover {
+            top: calc(100% - 28px);
+            left: 50%;
+            transform: translate(-50%, -8px) scale(0.98);
+            transform-origin: top center;
+          }
+
+          .koala-status-anchor:hover .koala-status-popover,
+          .koala-status-anchor:focus-within .koala-status-popover,
+          .koala-status-anchor.is-open .koala-status-popover {
+            transform: translate(-50%, 0) scale(1);
+          }
         }
-        .horizontal-track {
-           flex: 1;
-           height: 12px;
-           background: rgba(255, 255, 255, 0.1);
-           border-radius: 99px;
-           overflow: hidden;
-           position: relative;
-        }
-        .horizontal-fill {
-           height: 100%;
-           background: linear-gradient(90deg, #4ea881 0%, #7ce0b2 40%, #a78bfa 100%);
-           border-radius: 99px;
-           transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+
+        @media (max-width: 700px) {
+          .koala-care-card {
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding: 22px;
+          }
+
+          .koala-care-energy {
+            min-width: 0;
+            align-items: flex-start;
+          }
+
+          .energy-hearts {
+            gap: 4px;
+          }
+
+          .energy-hearts .energy-heart {
+            width: 19px;
+            height: 19px;
+          }
+
+          .koala-status-popover {
+            width: min(300px, 86vw);
+          }
+
+          .koala-energy-peek {
+            right: 6px;
+            bottom: 18px;
+          }
         }
         
         /* This Week Tracker */
@@ -1023,11 +1354,14 @@ export const Dashboard: React.FC = () => {
         <button
           type="button"
           className="nav-arrow-btn right-edge"
-          onClick={() => setCurrentView('progress')}
-          aria-label="Open My Progress"
+          onClick={() => {
+            setIsKoalaStatusOpen(false);
+            setCurrentView('progress');
+          }}
+          aria-label="See Koala's week"
         >
           <ChevronRight className="nav-arrow-icon" size={28} />
-          <span className="arrow-text-label">My Progress</span>
+          <span className="arrow-text-label">See Koala's week</span>
         </button>
       )}
       {currentView === 'progress' && (
@@ -1074,14 +1408,8 @@ export const Dashboard: React.FC = () => {
                 <span>Bedtime goal: {formatCutoff12h(summary?.cutoffTime)}</span>
               </div>
 
-              {/* The animated koala state */}
-              <div className={`pet-sprite-stage${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}>
-                <img 
-                  src={koalaImage}
-                  alt={koalaAlt}
-                  className={`pet-sprite-image${isInBedAnimation ? ' in-bed' : ''}`}
-                />
-              </div>
+              {/* Koala state is the natural entry point into progress. */}
+              {renderKoalaStatus('desktop')}
 
               {/* Desktop Slider Check-In Wrapper */}
               {showRecordedCheckIn ? (
@@ -1176,14 +1504,8 @@ export const Dashboard: React.FC = () => {
                 <span>Bedtime goal: {formatCutoff12h(summary?.cutoffTime)}</span>
               </div>
 
-              {/* The centered animated koala state */}
-              <div className={`pet-sprite-stage${isInBedAnimation ? ' in-bed' : ''}${useCompactKoalaStage ? ' compact-koala' : ''}`}>
-                <img 
-                  src={koalaImage}
-                  alt={koalaAlt}
-                  className={`pet-sprite-image${isInBedAnimation ? ' in-bed' : ''}`}
-                />
-              </div>
+              {/* Tap mirrors the desktop hover/focus interaction. */}
+              {renderKoalaStatus('mobile')}
 
               {/* Bottom Slogan Banner */}
               <div className="bottom-slogan-banner" style={{ 
@@ -1247,10 +1569,26 @@ export const Dashboard: React.FC = () => {
         <div className="view-panel">
           <div className="progress-container">
             <h2 className="section-big-title">My Progress</h2>
+            <p className="progress-intro">Your bedtime choices shape how Koala feels.</p>
             
             <div className="progress-grid">
+
+              <section className="dark-glass-card koala-care-card" aria-labelledby="koala-care-title">
+                <div className="koala-care-copy">
+                  <div className="koala-care-kicker">
+                    <Heart size={16} fill="currentColor" color="#f0a0b5" aria-hidden="true" />
+                    <span>Koala energy</span>
+                  </div>
+                  <h3 id="koala-care-title">{koalaEnergyState.label}</h3>
+                  <p>{energyReason} On-time nights help Koala stay rested.</p>
+                </div>
+                <div className="koala-care-energy">
+                  {renderEnergyHearts()}
+                  <span className="koala-energy-count">{energyHearts} of 10 energy</span>
+                </div>
+              </section>
               
-              {/* Left Col: Bedtime Metrics & Energy */}
+              {/* Left Col: Bedtime Metrics */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div className="dark-glass-card">
                   <div className="card-header-small">
@@ -1297,15 +1635,6 @@ export const Dashboard: React.FC = () => {
                       </span>
                     </div>
                   )}
-                  
-                  {/* Energy Meter appended in the same card (or distinct one) */}
-                  <div className="energy-horizontal-meter">
-                     <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f3edd7', whiteSpace: 'nowrap' }}>Koala Energy</span>
-                     <div className="horizontal-track">
-                        <div className="horizontal-fill" style={{ width: `${energyPercent}%` }} />
-                     </div>
-                     <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{energyPercent}%</span>
-                  </div>
                 </div>
               </div>
 
