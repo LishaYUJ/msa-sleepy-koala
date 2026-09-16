@@ -46,7 +46,7 @@ const SessionGateFallback: React.FC<{
           <p className="session-gate-kicker">Connection paused</p>
           <h1>Koala couldn’t reach the server</h1>
           <p className="session-gate-copy">
-            {errorMessage || 'Start the local backend, then try again.'}
+            {errorMessage || 'The service is temporarily unavailable. Please try again.'}
           </p>
           <div className="session-gate-actions">
             <button type="button" className="session-gate-primary" onClick={onRetry}>
@@ -59,7 +59,9 @@ const SessionGateFallback: React.FC<{
             </button>
           </div>
           <p className="session-gate-hint">
-            Local development expects the API at <code>localhost:5125</code>.
+            {import.meta.env.DEV
+              ? <>Local development expects the API at <code>localhost:5125</code>.</>
+              : 'The service may be waking up. Wait a moment, then try again.'}
           </p>
         </>
       ) : (

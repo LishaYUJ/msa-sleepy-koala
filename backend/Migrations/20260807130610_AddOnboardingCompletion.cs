@@ -10,10 +10,14 @@ namespace SleepyKoala.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            var booleanType = ActiveProvider == "Microsoft.EntityFrameworkCore.SqlServer"
+                ? "bit"
+                : "INTEGER";
+
             migrationBuilder.AddColumn<bool>(
                 name: "OnboardingCompleted",
                 table: "UserSettings",
-                type: "INTEGER",
+                type: booleanType,
                 nullable: false,
                 // Existing accounts keep their access. New registrations explicitly
                 // save false until they finish the onboarding flow.

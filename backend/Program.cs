@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using SleepyKoala.Api.Configuration;
 using SleepyKoala.Api.Data;
@@ -21,7 +22,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     if (databaseProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     {
-        options.UseSqlServer(connectionString);
+        options
+            .UseSqlServer(connectionString)
+            // The migration snapshot is generated with SQLite for local development.
+            // Individual migrations select provider-specific SQL at runtime.
+            .ConfigureWarnings(warnings => warnings.Ignore(
+                RelationalEventId.PendingModelChangesWarning));
         return;
     }
 
